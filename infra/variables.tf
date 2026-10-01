@@ -1,0 +1,71 @@
+variable "aws_region" {
+  description = "AWS region for the Lambda, API and DynamoDB tables."
+  type        = string
+  default     = "us-east-1"
+}
+
+variable "project_name" {
+  description = "Prefix for all resource names. Lowercase letters, numbers and dashes."
+  type        = string
+  default     = "rifa"
+}
+
+variable "raffle_name" {
+  description = "Title shown on the public page."
+  type        = string
+  default     = "Gran Rifa de 1.000.000"
+}
+
+variable "ticket_price" {
+  description = "Ticket price in COP (each ticket = 2 numbers)."
+  type        = number
+  default     = 25000
+}
+
+variable "prize" {
+  description = "Prize in COP."
+  type        = number
+  default     = 1000000
+}
+
+variable "draw_date" {
+  description = "Date of the Lotería de Boyacá draw that decides the raffle (YYYY-MM-DD)."
+  type        = string
+
+  validation {
+    condition     = can(regex("^\\d{4}-\\d{2}-\\d{2}$", var.draw_date))
+    error_message = "draw_date must be YYYY-MM-DD."
+  }
+}
+
+variable "payment_instructions" {
+  description = "How buyers pay (shown after they reserve). Example: Nequi 300 123 4567 a nombre de Juan Pérez."
+  type        = string
+}
+
+variable "whatsapp_number" {
+  description = "Admin WhatsApp number with country code, digits only (e.g. 573001234567). Buyers send payment proof here."
+  type        = string
+
+  validation {
+    condition     = can(regex("^\\d{10,15}$", var.whatsapp_number))
+    error_message = "whatsapp_number must be digits only, including country code (e.g. 573001234567)."
+  }
+}
+
+variable "reservation_hours" {
+  description = "Hours a reservation is held before unpaid numbers are released."
+  type        = number
+  default     = 24
+}
+
+variable "admin_password" {
+  description = "Password for /admin.html. Use a long one."
+  type        = string
+  sensitive   = true
+
+  validation {
+    condition     = length(var.admin_password) >= 12
+    error_message = "admin_password must be at least 12 characters."
+  }
+}

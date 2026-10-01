@@ -1,0 +1,11 @@
+# Copy to terraform.tfvars and fill in. terraform.tfvars is git-ignored.
+aws_region           = "us-east-1"
+project_name         = "rifa"
+raffle_name          = "Gran Rifa de 1.000.000"
+ticket_price         = 25000
+prize                = 1000000
+draw_date            = "2026-11-24"
+payment_instructions = "Nequi o Daviplata: 300 123 4567 a nombre de Juan Pérez"
+whatsapp_number      = "573001234567"
+reservation_hours    = 24
+admin_password       = "cambia-esta-clave-larga"

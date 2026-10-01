@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>Administrar rifa</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<main>
+  <section class="card" id="login-card">
+    <h1>Administrar rifa</h1>
+    <form id="login-form">
+      <label for="password">Contraseña</label>
+      <input id="password" type="password" autocomplete="current-password" required>
+      <button class="btn block" type="submit">Entrar</button>
+      <div class="error" id="login-error" role="alert"></div>
+    </form>
+  </section>
+
+  <div id="panel" class="hidden">
+    <div class="toolbar">
+      <h1 style="flex:1">Administrar rifa</h1>
+      <a class="btn secondary small" href="/" target="_blank">Ver página pública</a>
+      <button class="btn secondary small" id="logout" type="button">Salir</button>
+    </div>
+
+    <section class="stats" id="stats" style="margin-bottom:16px"></section>
+
+    <section class="card">
+      <h2>Boletos</h2>
+      <div class="toolbar">
+        <input id="search" type="search" placeholder="Buscar por nombre, celular, código o número">
+        <div class="tabs" id="filters" style="margin:0">
+          <button type="button" data-filter="pendiente" aria-pressed="true">Pendientes</button>
+          <button type="button" data-filter="pagado" aria-pressed="false">Pagados</button>
+          <button type="button" data-filter="vencido" aria-pressed="false">Vencidos</button>
+          <button type="button" data-filter="cancelado" aria-pressed="false">Cancelados</button>
+          <button type="button" data-filter="todos" aria-pressed="false">Todos</button>
+        </div>
+        <button class="btn secondary small" id="export" type="button">Exportar CSV</button>
+        <button class="btn secondary small" id="refresh" type="button">Actualizar</button>
+      </div>
+      <div class="error" id="panel-error" role="alert"></div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Código</th><th>Números</th><th>Nombre</th><th>Celular</th><th>Modo</th><th>Estado</th><th>Creado</th><th></th></tr>
+          </thead>
+          <tbody id="rows"></tbody>
+        </table>
+      </div>
+      <p class="muted hidden" id="empty">No hay boletos en esta vista.</p>
+    </section>
+
+    <section class="card">
+      <h2>Sorteo – Lotería de Boyacá</h2>
+      <p class="muted">Escribe el número ganador del premio mayor. Se usan sus 3 últimas cifras. Al registrarlo se cierran las ventas.</p>
+      <div id="winner-current" class="hidden"></div>
+      <form id="winner-form">
+        <label for="lottery-number">Número ganador de la lotería</label>
+        <input id="lottery-number" inputmode="numeric" pattern="\d{3,6}" placeholder="Ej: 4827" required>
+        <label for="lottery-date">Fecha del sorteo</label>
+        <input id="lottery-date" type="date" required>
+        <button class="btn block" type="submit">Registrar resultado</button>
+        <div class="error" id="winner-error" role="alert"></div>
+      </form>
+    </section>
+  </div>
+</main>
+<script src="admin.js"></script>
+</body>
+</html>

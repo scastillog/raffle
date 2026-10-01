@@ -1,0 +1,7 @@
+node_modules/
+infra/.terraform/
+infra/build/
+infra/*.tfstate
+infra/*.tfstate.*
+infra/terraform.tfvars
+infra/.terraform.tfstate.lock.info

@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Rifa</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<main>
+  <section class="hero">
+    <h1 id="raffle-name">Rifa</h1>
+    <div>Premio</div>
+    <div class="prize" id="prize">—</div>
+    <p>Juega con las 3 últimas cifras de la <b id="lottery">Lotería de Boyacá</b>.</p>
+    <div class="facts">
+      <div class="fact">Valor del boleto<b id="price">—</b></div>
+      <div class="fact">Números por boleto<b>2</b></div>
+      <div class="fact">Fecha del sorteo<b id="draw-date">—</b></div>
+    </div>
+  </section>
+
+  <section class="card winner hidden" id="winner-card">
+    <h2>🎉 Resultado del sorteo</h2>
+    <p>Lotería de Boyacá del <b id="w-date"></b>: <b id="w-lottery"></b></p>
+    <div class="big" id="w-number"></div>
+    <p id="w-text"></p>
+  </section>
+
+  <section class="card" id="progress-card">
+    <b id="progress-text">Cargando…</b>
+    <div class="progress"><div id="progress-bar" style="width:0"></div></div>
+  </section>
+
+  <section class="card" id="buy-card">
+    <h2>Compra tu boleto</h2>
+    <p class="muted">¿Cómo quieres elegir tus 2 números?</p>
+    <div class="tabs" id="mode-tabs">
+      <button type="button" data-mode="libre" aria-pressed="true">Elijo los 2</button>
+      <button type="button" data-mode="pareja" aria-pressed="false">Elijo 1 y me dan su pareja</button>
+      <button type="button" data-mode="azar" aria-pressed="false">Al azar</button>
+    </div>
+    <p class="muted" id="mode-help"></p>
+
+    <div id="picker">
+      <div class="tabs" id="hundreds"></div>
+      <div class="grid" id="grid"></div>
+      <div class="legend">
+        <span class="l-free">Disponible</span>
+        <span class="l-res">Reservado</span>
+        <span class="l-sold">Vendido</span>
+        <span class="l-sel">Tu elección</span>
+      </div>
+    </div>
+
+    <div class="chips" id="chips"></div>
+
+    <form id="buy-form" novalidate>
+      <label for="name">Nombre completo</label>
+      <input id="name" name="name" autocomplete="name" required maxlength="80">
+      <label for="phone">Celular (WhatsApp)</label>
+      <input id="phone" name="phone" type="tel" inputmode="numeric" autocomplete="tel" placeholder="300 123 4567" required>
+      <button class="btn block" id="buy-btn" type="submit" disabled>Reservar boleto</button>
+      <div class="error" id="buy-error" role="alert"></div>
+    </form>
+  </section>
+
+  <section class="card hidden" id="done-card">
+    <h2>✅ ¡Boleto reservado!</h2>
+    <p>Código del boleto: <b id="d-id"></b></p>
+    <div class="chips" id="d-chips"></div>
+    <p>Tienes <b id="d-hours"></b> horas para pagar <b id="d-price"></b>. Si no pagas, los números se liberan.</p>
+    <h3>Cómo pagar</h3>
+    <p id="d-payment" style="white-space:pre-line"></p>
+    <p>Después de pagar, envía el comprobante por WhatsApp con tu código de boleto.</p>
+    <a class="btn" id="d-whatsapp" target="_blank" rel="noopener">Enviar comprobante por WhatsApp</a>
+    <button class="btn secondary" id="d-again" type="button">Comprar otro boleto</button>
+  </section>
+</main>
+<script src="app.js"></script>
+</body>
+</html>

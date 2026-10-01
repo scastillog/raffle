@@ -1,0 +1,9 @@
+{
+  "name": "rifa-backend",
+  "private": true,
+  "type": "module",
+  "description": "Lambda API for the raffle. Uses the AWS SDK v3 bundled in the nodejs22.x runtime, so there are no dependencies to install.",
+  "scripts": {
+    "test": "node --test test/*.test.mjs"
+  }
+}
