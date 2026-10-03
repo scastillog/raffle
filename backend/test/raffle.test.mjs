@@ -4,10 +4,12 @@ import {
   HttpError,
   freeNumbers,
   isNumberTaken,
+  isVerificationCodeValid,
   lastThreeDigits,
   maskPhone,
   normalizeName,
   normalizePhone,
+  normalizeVerificationCode,
   pairOf,
   parseNumber,
   pickRandom,
@@ -44,6 +46,46 @@ test('normalizePhone accepts Colombian mobiles only', () => {
 test('normalizeName trims and collapses whitespace', () => {
   assert.equal(normalizeName('  Ana   María  '), 'Ana María');
   assert.equal(normalizeName('A'), null);
+});
+
+test('normalizeVerificationCode requires exactly 6 decimal digits', () => {
+  assert.equal(normalizeVerificationCode('123456'), '123456');
+  assert.equal(normalizeVerificationCode('004819'), '004819');
+  assert.equal(normalizeVerificationCode('  849201  '), '849201');
+  assert.equal(normalizeVerificationCode('12345'), null);
+  assert.equal(normalizeVerificationCode('1234567'), null);
+  assert.equal(normalizeVerificationCode('12345a'), null);
+  assert.equal(normalizeVerificationCode(''), null);
+  assert.equal(normalizeVerificationCode(null), null);
+  assert.equal(normalizeVerificationCode(undefined), null);
+});
+
+test('isVerificationCodeValid validates active and grace window codes', () => {
+  const record = {
+    code: '123456',
+    expiresAt: 2000,
+    previousCode: '654321',
+    previousExpiresAt: 1500,
+  };
+
+  // Current code is valid before expiration
+  assert.equal(isVerificationCodeValid('123456', record, 1000), true);
+  assert.equal(isVerificationCodeValid('123456', record, 1999), true);
+  // Current code is invalid at or after expiration
+  assert.equal(isVerificationCodeValid('123456', record, 2000), false);
+  assert.equal(isVerificationCodeValid('123456', record, 2500), false);
+
+  // Previous code is valid during grace period
+  assert.equal(isVerificationCodeValid('654321', record, 1000), true);
+  assert.equal(isVerificationCodeValid('654321', record, 1499), true);
+  // Previous code is invalid at or after grace period
+  assert.equal(isVerificationCodeValid('654321', record, 1500), false);
+  assert.equal(isVerificationCodeValid('654321', record, 1800), false);
+
+  // Wrong codes and falsy inputs are rejected
+  assert.equal(isVerificationCodeValid('000000', record, 1000), false);
+  assert.equal(isVerificationCodeValid(null, record, 1000), false);
+  assert.equal(isVerificationCodeValid('123456', null, 1000), false);
 });
 
 test('isNumberTaken honours expiry of reservations', () => {

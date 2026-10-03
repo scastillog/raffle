@@ -5,6 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex">
   <title>Administrar rifa</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;600;700&family=Space+Grotesk:wght@500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -21,12 +24,30 @@
 
   <div id="panel" class="hidden">
     <div class="toolbar">
-      <h1 style="flex:1">Administrar rifa</h1>
+      <h1 class="toolbar-title">Administrar rifa</h1>
       <a class="btn secondary small" href="/" target="_blank">Ver página pública</a>
       <button class="btn secondary small" id="logout" type="button">Salir</button>
     </div>
 
     <section class="stats" id="stats" style="margin-bottom:16px"></section>
+
+    <section class="card" id="code-card">
+      <div class="code-card-header">
+        <div>
+          <h2>Código de verificación para compras</h2>
+          <p class="muted">Los compradores deben ingresar este código de 6 dígitos en la página pública para poder registrar su boleto.</p>
+        </div>
+        <div class="code-box-actions">
+          <div id="admin-verify-code" class="code-display">------</div>
+          <button class="btn secondary small" id="copy-code-btn" type="button">Copiar</button>
+          <button class="btn secondary small" id="regen-code-btn" type="button">Nuevo código</button>
+        </div>
+      </div>
+      <div class="code-meta">
+        <span id="code-expiry-text">Expira en: --</span>
+        <span id="code-copy-feedback" class="code-feedback"></span>
+      </div>
+    </section>
 
     <section class="card">
       <h2>Boletos</h2>

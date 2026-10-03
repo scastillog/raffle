@@ -9,6 +9,7 @@ import {
   declareWinner,
   getPublicState,
   listTickets,
+  regenerateVerificationCode,
 } from './service.mjs';
 
 const ssm = new SSMClient({});
@@ -77,6 +78,7 @@ async function route(event) {
     }
     if (method === 'POST' && path === '/api/admin/ganador') return declareWinner(parseBody(event));
     if (method === 'DELETE' && path === '/api/admin/ganador') return clearWinner();
+    if (method === 'POST' && path === '/api/admin/codigo/regenerar') return regenerateVerificationCode();
   }
 
   throw new HttpError(404, 'Ruta no encontrada.');

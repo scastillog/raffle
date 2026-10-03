@@ -59,6 +59,12 @@ variable "reservation_hours" {
   default     = 24
 }
 
+variable "code_rotation_hours" {
+  description = "Hours a purchase verification code stays valid before it rotates."
+  type        = number
+  default     = 1
+}
+
 variable "admin_password" {
   description = "Password for /admin.html. Use a long one."
   type        = string

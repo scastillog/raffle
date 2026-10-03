@@ -32,7 +32,10 @@ function showPanel(visible) {
   $('panel').classList.toggle('hidden', !visible);
 }
 
+let expiryInterval = null;
+
 function logout() {
+  if (expiryInterval) clearInterval(expiryInterval);
   setToken(null);
   showPanel(false);
 }
@@ -82,7 +85,7 @@ function visibleTickets() {
   return state.data.tickets.filter((t) => {
     if (state.filter !== 'todos' && t.status !== state.filter) return false;
     if (!q) return true;
-    return [t.id, t.name, t.phone, ...t.numbers].some((v) => v.toLowerCase().includes(q));
+    return [t.id, t.name, t.phone, t.verificationCode ?? '', ...t.numbers].some((v) => v.toLowerCase().includes(q));
   });
 }
 
@@ -147,11 +150,34 @@ function renderWinner(winner) {
   box.append(p, undo);
 }
 
+function renderVerificationCode(vCode) {
+  if (!vCode || !vCode.code) return;
+  $('admin-verify-code').textContent = vCode.code;
+
+  if (expiryInterval) clearInterval(expiryInterval);
+
+  function updateExpiry() {
+    const remainingMs = vCode.expiresAt - Date.now();
+    if (remainingMs <= 0) {
+      $('code-expiry-text').textContent = 'Código expirado. Actualizando...';
+      refresh();
+      return;
+    }
+    const minutes = Math.floor(remainingMs / 60000);
+    const seconds = Math.floor((remainingMs % 60000) / 1000);
+    $('code-expiry-text').textContent = `Expira en: ${minutes}m ${seconds < 10 ? '0' : ''}${seconds}s`;
+  }
+
+  updateExpiry();
+  expiryInterval = setInterval(updateExpiry, 1000);
+}
+
 async function refresh() {
   $('panel-error').textContent = '';
   try {
     state.data = await api('GET', '/api/admin/boletos');
     renderStats(state.data);
+    renderVerificationCode(state.data.verificationCode);
     renderRows();
     renderWinner(state.data.winner);
   } catch (err) {
@@ -171,10 +197,10 @@ async function act(ticket, action) {
 }
 
 function exportCsv() {
-  const header = ['codigo', 'numero1', 'numero2', 'nombre', 'celular', 'modo', 'estado', 'creado'];
+  const header = ['codigo', 'numero1', 'numero2', 'nombre', 'celular', 'modo', 'codigo_verificacion', 'estado', 'creado'];
   const esc = (v) => `"${String(v).replace(/"/g, '""')}"`;
   const lines = state.data.tickets.map((t) =>
-    [t.id, t.numbers[0], t.numbers[1], t.name, t.phone, t.mode, t.status, new Date(t.createdAt).toISOString()].map(esc).join(','),
+    [t.id, t.numbers[0], t.numbers[1], t.name, t.phone, t.mode, t.verificationCode ?? '', t.status, new Date(t.createdAt).toISOString()].map(esc).join(','),
   );
   const blob = new Blob([`﻿${header.join(',')}\n${lines.join('\n')}`], { type: 'text/csv;charset=utf-8' });
   const a = document.createElement('a');
@@ -225,6 +251,34 @@ $('search').addEventListener('input', () => state.data && renderRows());
 $('refresh').addEventListener('click', refresh);
 $('export').addEventListener('click', () => state.data && exportCsv());
 $('logout').addEventListener('click', logout);
+
+$('copy-code-btn').addEventListener('click', async () => {
+  const code = $('admin-verify-code').textContent.trim();
+  if (!code || code === '------') return;
+  try {
+    await navigator.clipboard.writeText(code);
+    $('code-copy-feedback').textContent = '¡Copiado!';
+    setTimeout(() => { $('code-copy-feedback').textContent = ''; }, 2500);
+  } catch {
+    $('code-copy-feedback').textContent = 'Error al copiar';
+    setTimeout(() => { $('code-copy-feedback').textContent = ''; }, 2500);
+  }
+});
+
+$('regen-code-btn').addEventListener('click', async () => {
+  if (!confirm('¿Generar un nuevo código de 6 dígitos ahora? El código anterior tendrá unos minutos de gracia.')) return;
+  try {
+    const res = await api('POST', '/api/admin/codigo/regenerar');
+    if (res && res.code) {
+      state.data.verificationCode = res;
+      renderVerificationCode(res);
+      $('code-copy-feedback').textContent = '¡Nuevo código generado!';
+      setTimeout(() => { $('code-copy-feedback').textContent = ''; }, 2500);
+    }
+  } catch (err) {
+    alert(err.message);
+  }
+});
 
 if (token()) {
   showPanel(true);

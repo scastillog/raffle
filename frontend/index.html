@@ -4,16 +4,21 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Rifa</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;600;700&family=Space+Grotesk:wght@500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
 <main>
-  <section class="hero">
-    <h1 id="raffle-name">Rifa</h1>
-    <div>Premio</div>
-    <div class="prize" id="prize">—</div>
-    <p>Juega con las 3 últimas cifras de la <b id="lottery">Lotería de Boyacá</b>.</p>
-    <div class="facts">
+  <section class="ticket">
+    <div class="ticket-face">
+      <h1 id="raffle-name">Rifa</h1>
+      <div class="ticket-label">Premio</div>
+      <div class="prize" id="prize">—</div>
+      <p>Juega con las 3 últimas cifras de la <b id="lottery">Lotería de Boyacá</b>.</p>
+    </div>
+    <div class="ticket-stub facts">
       <div class="fact">Valor del boleto<b id="price">—</b></div>
       <div class="fact">Números por boleto<b>2</b></div>
       <div class="fact">Fecha del sorteo<b id="draw-date">—</b></div>
@@ -27,7 +32,7 @@
     <p id="w-text"></p>
   </section>
 
-  <section class="card" id="progress-card">
+  <section class="status-line" id="progress-card">
     <b id="progress-text">Cargando…</b>
     <div class="progress"><div id="progress-bar" style="width:0"></div></div>
   </section>
@@ -60,6 +65,9 @@
       <input id="name" name="name" autocomplete="name" required maxlength="80">
       <label for="phone">Celular (WhatsApp)</label>
       <input id="phone" name="phone" type="tel" inputmode="numeric" autocomplete="tel" placeholder="300 123 4567" required>
+      <label for="code">Código de verificación (6 dígitos)</label>
+      <input id="code" name="code" type="text" inputmode="numeric" pattern="\d{6}" maxlength="6" placeholder="000000" autocomplete="off" required>
+      <p class="muted" style="margin:4px 0 0; font-size:.85rem">Ingresa el código de 6 dígitos proporcionado por el organizador.</p>
       <button class="btn block" id="buy-btn" type="submit" disabled>Reservar boleto</button>
       <div class="error" id="buy-error" role="alert"></div>
     </form>

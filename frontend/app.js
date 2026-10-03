@@ -170,20 +170,31 @@ $('buy-form').addEventListener('submit', async (e) => {
   btn.disabled = true;
   btn.textContent = 'Reservando…';
   try {
+    const code = $('code').value.trim();
+    if (!/^\d{6}$/.test(code)) {
+      throw new Error('Ingresa el código de verificación de 6 dígitos.');
+    }
     const numbers = state.mode === 'libre' ? state.selected : state.mode === 'pareja' ? state.selected.slice(0, 1) : [];
     const res = await fetch('/api/boletos', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ mode: state.mode, numbers, name: $('name').value, phone: $('phone').value }),
+      body: JSON.stringify({
+        mode: state.mode,
+        numbers,
+        name: $('name').value,
+        phone: $('phone').value,
+        code,
+      }),
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error);
     showDone(data);
     state.selected = [];
-    load().catch(() => {});
+    $('code').value = '';
+    load().catch(() => { });
   } catch (err) {
     $('buy-error').textContent = err.message || 'No se pudo reservar. Intenta de nuevo.';
-    load().catch(() => {});
+    load().catch(() => { });
   } finally {
     btn.textContent = 'Reservar boleto';
     btn.disabled = !canBuy();
@@ -193,10 +204,11 @@ $('buy-form').addEventListener('submit', async (e) => {
 $('d-again').addEventListener('click', () => {
   $('done-card').classList.add('hidden');
   $('buy-card').classList.remove('hidden');
+  $('code').value = '';
   setMode(state.mode);
 });
 
 renderHundreds();
 setMode('libre');
 load().catch((err) => { $('progress-text').textContent = `Error cargando la rifa: ${err.message}`; });
-setInterval(() => load().catch(() => {}), 30000);
+setInterval(() => load().catch(() => { }), 30000);

@@ -13,10 +13,12 @@ import {
   HttpError,
   TOTAL_NUMBERS,
   isNumberTaken,
+  isVerificationCodeValid,
   lastThreeDigits,
   maskPhone,
   normalizeName,
   normalizePhone,
+  normalizeVerificationCode,
   publicName,
   resolveSelection,
   ticketStatus,
@@ -28,7 +30,10 @@ const NUMBERS_TABLE = process.env.NUMBERS_TABLE;
 const TICKETS_TABLE = process.env.TICKETS_TABLE;
 const SETTINGS_TABLE = process.env.SETTINGS_TABLE;
 const WINNER_KEY = { id: 'ganador' };
+const VERIFICATION_CODE_KEY = { id: 'codigo_verificacion' };
 const RESERVATION_MS = Number(process.env.RESERVATION_HOURS || 24) * 3600 * 1000;
+const CODE_ROTATION_MS = Number(process.env.CODE_ROTATION_HOURS || 1) * 3600 * 1000;
+const CODE_GRACE_MS = 10 * 60 * 1000;
 
 export const raffleInfo = {
   name: process.env.RAFFLE_NAME,
@@ -56,6 +61,85 @@ async function scanAll(table) {
 async function getWinner() {
   const { Item } = await db.send(new GetCommand({ TableName: SETTINGS_TABLE, Key: WINNER_KEY }));
   return Item ?? null;
+}
+
+function generateRandomCode() {
+  return String(randomInt(100000, 1000000));
+}
+
+async function readVerificationRecord() {
+  const { Item } = await db.send(new GetCommand({ TableName: SETTINGS_TABLE, Key: VERIFICATION_CODE_KEY }));
+  return Item ?? null;
+}
+
+// Replaces `current` with a fresh code. The write is conditional on the record being unchanged,
+// so concurrent rotations can't clobber each other. Returns null if someone else rotated first.
+// `keepPrevious` (manual regeneration) keeps the old code valid for a short grace window, never
+// beyond its own expiry; on natural expiry the old code is simply dead.
+async function rotateVerificationCode(current, now, keepPrevious) {
+  const previousUsable = keepPrevious && current?.code && current.expiresAt > now;
+  const item = {
+    ...VERIFICATION_CODE_KEY,
+    code: generateRandomCode(),
+    createdAt: now,
+    expiresAt: now + CODE_ROTATION_MS,
+    previousCode: previousUsable ? current.code : null,
+    previousExpiresAt: previousUsable ? Math.min(now + CODE_GRACE_MS, current.expiresAt) : null,
+  };
+  try {
+    await db.send(
+      new PutCommand({
+        TableName: SETTINGS_TABLE,
+        Item: item,
+        ...(current
+          ? {
+              ConditionExpression: 'code = :code AND createdAt = :createdAt',
+              ExpressionAttributeValues: { ':code': current.code, ':createdAt': current.createdAt },
+            }
+          : { ConditionExpression: 'attribute_not_exists(id)' }),
+      }),
+    );
+  } catch (err) {
+    if (err.name === 'ConditionalCheckFailedException') return null;
+    throw err;
+  }
+  return item;
+}
+
+async function getVerificationRecord(now) {
+  for (let i = 0; i < 3; i++) {
+    const current = await readVerificationRecord();
+    if (current?.code && current.expiresAt > now) return current;
+    const rotated = await rotateVerificationCode(current, now, false);
+    if (rotated) return rotated;
+  }
+  throw new HttpError(503, 'No se pudo generar el código de verificación. Intenta de nuevo.');
+}
+
+const publicCode = ({ code, expiresAt }) => ({ code, expiresAt });
+
+export async function getActiveVerificationCode(now = Date.now()) {
+  return publicCode(await getVerificationRecord(now));
+}
+
+export async function regenerateVerificationCode(now = Date.now()) {
+  for (let i = 0; i < 3; i++) {
+    const rotated = await rotateVerificationCode(await readVerificationRecord(), now, true);
+    if (rotated) return publicCode(rotated);
+  }
+  throw new HttpError(503, 'No se pudo generar el código de verificación. Intenta de nuevo.');
+}
+
+export async function verifyPurchaseCode(inputCode, now = Date.now()) {
+  const normalized = normalizeVerificationCode(inputCode);
+  if (!normalized) {
+    throw new HttpError(400, 'Ingresa el código de verificación de 6 dígitos.');
+  }
+  const record = await getVerificationRecord(now);
+  if (!isVerificationCodeValid(normalized, record, now)) {
+    throw new HttpError(400, 'Código de verificación incorrecto o vencido. Solicita el código actual al organizador.');
+  }
+  return true;
 }
 
 // Map of number -> 'vendido' | 'reservado' for every number that is currently blocked.
@@ -118,6 +202,7 @@ export async function createTicket(body, now = Date.now()) {
   if (!name) throw new HttpError(400, 'Escribe tu nombre completo.');
   if (!phone) throw new HttpError(400, 'Escribe un celular colombiano válido (10 dígitos, empieza por 3).');
   if (await getWinner()) throw new HttpError(409, 'La rifa ya se jugó. No se venden más boletos.');
+  await verifyPurchaseCode(body.code, now);
 
   // Random mode retries a few times in case someone grabs the same number concurrently.
   const attempts = body.mode === 'azar' ? 3 : 1;
@@ -131,6 +216,7 @@ export async function createTicket(body, now = Date.now()) {
       numbers,
       mode: body.mode,
       status: 'pendiente',
+      verificationCode: normalizeVerificationCode(body.code),
       createdAt: now,
       expiresAt: now + RESERVATION_MS,
     };
@@ -147,7 +233,11 @@ export async function createTicket(body, now = Date.now()) {
 }
 
 export async function listTickets(now = Date.now()) {
-  const [tickets, winner] = await Promise.all([scanAll(TICKETS_TABLE), getWinner()]);
+  const [tickets, winner, verificationCode] = await Promise.all([
+    scanAll(TICKETS_TABLE),
+    getWinner(),
+    getActiveVerificationCode(now),
+  ]);
   const rows = tickets
     .map((t) => ({ ...t, status: ticketStatus(t, now) }))
     .sort((a, b) => b.createdAt - a.createdAt);
@@ -156,6 +246,7 @@ export async function listTickets(now = Date.now()) {
   return {
     info: raffleInfo,
     winner,
+    verificationCode,
     tickets: rows,
     stats: {
       pagados: paid,

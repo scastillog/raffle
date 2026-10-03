@@ -40,6 +40,20 @@ export function normalizeName(value) {
   return s.length >= 3 && s.length <= 80 ? s : null;
 }
 
+export function normalizeVerificationCode(value) {
+  const s = String(value ?? '').trim();
+  return /^\d{6}$/.test(s) ? s : null;
+}
+
+export function isVerificationCodeValid(normalizedCode, record, now) {
+  if (!normalizedCode || !record) return false;
+  if (record.code === normalizedCode && now < record.expiresAt) return true;
+  if (record.previousCode === normalizedCode && record.previousExpiresAt && now < record.previousExpiresAt) {
+    return true;
+  }
+  return false;
+}
+
 // A number item blocks the number while it is paid, or reserved and not yet expired.
 export function isNumberTaken(item, now) {
   if (!item) return false;

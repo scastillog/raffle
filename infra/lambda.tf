@@ -84,6 +84,7 @@ resource "aws_lambda_function" "api" {
       PAYMENT_INSTRUCTIONS = var.payment_instructions
       WHATSAPP_NUMBER      = var.whatsapp_number
       RESERVATION_HOURS    = tostring(var.reservation_hours)
+      CODE_ROTATION_HOURS  = tostring(var.code_rotation_hours)
     }
   }
 
