@@ -196,17 +196,8 @@ $('buy-form').addEventListener('submit', async (e) => {
     if (!res.ok) throw new Error(errorMessage(res, data));
     showDone(data);
     state.selected = [];
-    $('code').value = '';
-    // A shared link like /?code=123456 pre-fills the purchase code, then the param is dropped from the URL.
-const sharedCode = new URLSearchParams(location.search).get('code');
-if (sharedCode && /^\d{6}$/.test(sharedCode.trim())) {
-  $('code').value = sharedCode.trim();
-  const url = new URL(location.href);
-  url.searchParams.delete('code');
-  history.replaceState(null, '', url);
-}
-
-load().catch(() => { });
+    $('code').value = sharedCode;
+    load().catch(() => { });
   } catch (err) {
     $('buy-error').textContent = err.message || 'No se pudo reservar. Intenta de nuevo.';
     load().catch(() => { });
@@ -219,9 +210,21 @@ load().catch(() => { });
 $('d-again').addEventListener('click', () => {
   $('done-card').classList.add('hidden');
   $('buy-card').classList.remove('hidden');
-  $('code').value = '';
+  $('code').value = sharedCode;
   setMode(state.mode);
 });
+
+// A shared link like /?code=123456 pre-fills the purchase code (kept for later purchases in this visit),
+// then the param is dropped from the address bar so it isn't re-shared by accident.
+const sharedCode = (() => {
+  const code = (new URLSearchParams(location.search).get('code') ?? '').trim();
+  if (!/^\d{6}$/.test(code)) return '';
+  const url = new URL(location.href);
+  url.searchParams.delete('code');
+  history.replaceState(null, '', url);
+  return code;
+})();
+$('code').value = sharedCode;
 
 renderHundreds();
 setMode('libre');
