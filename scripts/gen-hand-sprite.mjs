@@ -1,9 +1,12 @@
 // Generates the HAND sprite used in frontend/intro.js.
 // Run: node scripts/gen-hand-sprite.mjs  and paste the output over `const HAND = [...]`.
 // Shapes are filled with bandage, then an outline is added automatically around them.
+// Coordinates below describe a right hand; MIRROR flips it into a LEFT hand (palm facing the viewer,
+// thumb on the viewer's right) before texturing, so shading stays on the same side.
 const W = 28;
 const H = 33;
 const PALM_TOP = 15;
+const MIRROR = true;
 // [x0, width, topRow]: index and middle full length; ring and little finger are short stumps.
 const FINGERS = [
   [6, 4, 4],
@@ -15,7 +18,8 @@ const THUMB = [[13, 2, 3], [14, 1, 4], [15, 1, 5], [16, 2, 6], [17, 3, 6], [18, 
 
 const g = Array.from({ length: H }, () => Array(W).fill('.'));
 const set = (x, y, c) => { if (x >= 0 && x < W && y >= 0 && y < H) g[y][x] = c; };
-const fill = (x, y) => set(x, y, 'b'); // bandage, textured below
+const mx = (x) => (MIRROR ? W - 1 - x : x);
+const fill = (x, y) => set(mx(x), y, 'b'); // bandage, textured below
 
 for (const [x0, w, top] of FINGERS) {
   for (let y = top; y <= PALM_TOP; y++) {
@@ -39,10 +43,10 @@ for (let y = 0; y < H; y++) {
     g[y][x] = edge ? 'g' : (x + y) % 4 === 0 ? 'g' : 'w';
   }
 }
-for (let x = 8; x < 22; x++) if (g[20][x] !== '.') set(x, 20, x % 2 ? 't' : 'T');
+for (let x = 8; x < 22; x++) if (g[20][mx(x)] !== '.') set(mx(x), 20, x % 2 ? 't' : 'T');
 // Wrist skin and sleeve
-for (let x = 9; x < 21; x++) set(x, 27, 's');
-for (let y = 28; y < 32; y++) for (let x = 8; x < 22; x++) set(x, y, y === 30 ? 'C' : 'c');
+for (let x = 9; x < 21; x++) set(mx(x), 27, 's');
+for (let y = 28; y < 32; y++) for (let x = 8; x < 22; x++) set(mx(x), y, y === 30 ? 'C' : 'c');
 
 const solid = (x, y) => x >= 0 && x < W && y >= 0 && y < H && g[y][x] !== '.' && g[y][x] !== 'o';
 const out = g.map((row) => [...row]);
