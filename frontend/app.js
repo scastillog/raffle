@@ -197,7 +197,16 @@ $('buy-form').addEventListener('submit', async (e) => {
     showDone(data);
     state.selected = [];
     $('code').value = '';
-    load().catch(() => { });
+    // A shared link like /?code=123456 pre-fills the purchase code, then the param is dropped from the URL.
+const sharedCode = new URLSearchParams(location.search).get('code');
+if (sharedCode && /^\d{6}$/.test(sharedCode.trim())) {
+  $('code').value = sharedCode.trim();
+  const url = new URL(location.href);
+  url.searchParams.delete('code');
+  history.replaceState(null, '', url);
+}
+
+load().catch(() => { });
   } catch (err) {
     $('buy-error').textContent = err.message || 'No se pudo reservar. Intenta de nuevo.';
     load().catch(() => { });

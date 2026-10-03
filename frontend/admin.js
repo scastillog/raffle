@@ -265,6 +265,19 @@ $('copy-code-btn').addEventListener('click', async () => {
   }
 });
 
+$('share-link-btn').addEventListener('click', async () => {
+  const code = $('admin-verify-code').textContent.trim();
+  if (!/^\d{6}$/.test(code)) return;
+  const link = `${location.origin}/?code=${code}`;
+  try {
+    await navigator.clipboard.writeText(link);
+    $('code-copy-feedback').textContent = '¡Enlace copiado!';
+  } catch {
+    $('code-copy-feedback').textContent = 'Error al copiar';
+  }
+  setTimeout(() => { $('code-copy-feedback').textContent = ''; }, 2500);
+});
+
 $('regen-code-btn').addEventListener('click', async () => {
   if (!confirm('¿Generar un nuevo código de 6 dígitos ahora? El código anterior tendrá unos minutos de gracia.')) return;
   try {
