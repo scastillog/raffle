@@ -10,4 +10,5 @@ payment_instructions = "Nequi o Daviplata: 300 123 4567 a nombre de Juan Pérez"
 whatsapp_number      = "573001234567"
 reservation_hours    = 24
 admin_password       = "cambia-esta-clave-larga"
-enable_waf           = true # per-IP purchase rate limit, ~6 USD/month
+purchase_rate_limit  = 2 # purchases/second shared by all buyers; raise if buyers get "muchas solicitudes"
+purchase_burst_limit = 5

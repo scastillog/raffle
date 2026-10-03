@@ -28,7 +28,6 @@ The winner is the **last 3 digits of the Lotería de Boyacá** main prize on the
 | Hosting | **S3** (private bucket) served through **CloudFront** (Origin Access Control, HTTPS) |
 | API | **API Gateway HTTP API** behind CloudFront on `/api/*` → **AWS Lambda** (Node.js 22, ARM64) |
 | Database | **DynamoDB** (on-demand), 3 tables: `numeros`, `boletos`, `ajustes` |
-| Protection | **AWS WAF** on CloudFront: per-IP rate limit on ticket purchases (optional, `enable_waf`) |
 | Secrets | **SSM Parameter Store** (SecureString) for the admin password and token-signing key |
 | Infrastructure | **Terraform** (AWS provider) |
 | Tests | Node built-in test runner (`node --test`) |
@@ -36,11 +35,10 @@ The winner is the **last 3 digits of the Lotería de Boyacá** main prize on the
 No double-selling: each reservation is a DynamoDB **transaction** that only succeeds if both numbers are
 free (or held by an expired reservation), so two people can never get the same number.
 
-Purchase code brute-force: AWS WAF blocks an IP after `purchase_limit_per_ip` purchase attempts
-(default 20) in 5 minutes, so one attacker can't guess the code while normal buyers aren't slowed down.
-API Gateway keeps a higher global limit as a safety net, and the Lambda only accepts requests that come
-through CloudFront (secret `X-Origin-Verify` header), so WAF can't be bypassed via the API Gateway URL.
-WAF costs about 6 USD/month; set `enable_waf = false` to turn it off.
+Purchase code brute-force: API Gateway limits ticket purchases to `purchase_rate_limit` per second
+(default 2, burst 5). The limit is shared by all buyers, so if many people buy at once some get a
+"muchas solicitudes" message and must retry; raise the values if that happens. The Lambda only accepts
+requests that come through CloudFront (secret `X-Origin-Verify` header).
 
 Admin login: the password is checked by the Lambda, which returns a signed session token (12h).
 API Gateway throttling limits brute-force attempts.

@@ -34,12 +34,13 @@ resource "aws_apigatewayv2_stage" "default" {
     throttling_burst_limit = 40
   }
 
-  # Global safety net for ticket creation, shared by all buyers. Brute-forcing the purchase code
-  # is stopped per IP by the WAF rule in waf.tf, so this can stay high enough for a sales rush.
+  # Ticket creation checks the 6-digit purchase code, so cap guesses hard. The limit is shared
+  # by all buyers: 2 req/s is ~7,200 guesses/hour (<1% chance of hitting a 1-in-a-million code),
+  # but in a sales rush some buyers may get a 429 and have to retry.
   route_settings {
     route_key              = aws_apigatewayv2_route.create_ticket.route_key
-    throttling_rate_limit  = 10
-    throttling_burst_limit = 20
+    throttling_rate_limit  = var.purchase_rate_limit
+    throttling_burst_limit = var.purchase_burst_limit
   }
 }
 

@@ -84,7 +84,7 @@ async function route(event) {
   throw new HttpError(404, 'Ruta no encontrada.');
 }
 
-// CloudFront adds this header; direct calls to the API Gateway URL would bypass WAF.
+// CloudFront adds this header, so the API only answers requests that come through the site.
 function fromCloudFront(event) {
   const expected = process.env.ORIGIN_VERIFY_SECRET;
   return !expected || event.headers?.['x-origin-verify'] === expected;

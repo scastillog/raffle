@@ -74,7 +74,7 @@ resource "aws_cloudfront_distribution" "site" {
     origin_id   = "api"
     domain_name = replace(aws_apigatewayv2_api.api.api_endpoint, "https://", "")
 
-    # Shared secret so the Lambda rejects requests that skip CloudFront (and its WAF).
+    # Shared secret so the Lambda rejects requests that skip CloudFront.
     custom_header {
       name  = "X-Origin-Verify"
       value = random_password.origin_verify.result
@@ -115,8 +115,6 @@ resource "aws_cloudfront_distribution" "site" {
       restriction_type = "none"
     }
   }
-
-  web_acl_id = var.enable_waf ? aws_wafv2_web_acl.site[0].arn : null
 
   viewer_certificate {
     cloudfront_default_certificate = true

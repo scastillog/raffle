@@ -10,21 +10,16 @@ variable "aws_profile" {
   default     = null
 }
 
-variable "enable_waf" {
-  description = "Attach an AWS WAF web ACL to CloudFront that rate-limits ticket purchases per IP (~6 USD/month)."
-  type        = bool
-  default     = true
+variable "purchase_rate_limit" {
+  description = "Ticket purchases per second allowed by API Gateway, shared by ALL buyers. Low values slow down guessing the purchase code but can reject buyers during a rush."
+  type        = number
+  default     = 2
 }
 
-variable "purchase_limit_per_ip" {
-  description = "Max POST /api/boletos requests per IP in each 5-minute window when enable_waf is true (WAF minimum is 10)."
+variable "purchase_burst_limit" {
+  description = "Short burst of ticket purchases API Gateway accepts above purchase_rate_limit (shared by all buyers)."
   type        = number
-  default     = 20
-
-  validation {
-    condition     = var.purchase_limit_per_ip >= 10
-    error_message = "purchase_limit_per_ip must be at least 10 (AWS WAF minimum)."
-  }
+  default     = 5
 }
 
 variable "project_name" {
