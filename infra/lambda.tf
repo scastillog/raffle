@@ -85,6 +85,7 @@ resource "aws_lambda_function" "api" {
       WHATSAPP_NUMBER      = var.whatsapp_number
       RESERVATION_HOURS    = tostring(var.reservation_hours)
       CODE_ROTATION_HOURS  = tostring(var.code_rotation_hours)
+      ORIGIN_VERIFY_SECRET = random_password.origin_verify.result
     }
   }
 

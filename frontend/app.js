@@ -4,6 +4,12 @@ const cop = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP',
 const pad = (n) => String(n).padStart(3, '0');
 const pairOf = (n) => pad((Number(n) + PAIR_OFFSET) % 1000);
 
+function errorMessage(res, data) {
+  if (data.error) return data.error;
+  if (res.status === 429) return 'Hay muchas solicitudes en este momento. Espera unos segundos e intenta de nuevo.';
+  return `Error ${res.status}. Intenta de nuevo.`;
+}
+
 const MODE_HELP = {
   libre: 'Toca 2 números disponibles en la tabla.',
   pareja: `Toca 1 número y te damos también su pareja (+${PAIR_OFFSET}). Ej: 123 va con 623.`,
@@ -130,8 +136,8 @@ function renderWinner(winner) {
 
 async function load() {
   const res = await fetch('/api/estado', { cache: 'no-store' });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.error);
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(errorMessage(res, data));
   state.info = data.info;
   state.taken = data.taken;
   // Drop any selection that someone else took meanwhile.
@@ -186,8 +192,8 @@ $('buy-form').addEventListener('submit', async (e) => {
         code,
       }),
     });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error);
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(errorMessage(res, data));
     showDone(data);
     state.selected = [];
     $('code').value = '';

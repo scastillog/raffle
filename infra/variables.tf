@@ -4,6 +4,29 @@ variable "aws_region" {
   default     = "us-east-1"
 }
 
+variable "aws_profile" {
+  description = "Named AWS CLI profile to deploy with (from ~/.aws/config). Leave null to use the default credential chain (AWS_PROFILE, env vars, SSO, instance role...)."
+  type        = string
+  default     = null
+}
+
+variable "enable_waf" {
+  description = "Attach an AWS WAF web ACL to CloudFront that rate-limits ticket purchases per IP (~6 USD/month)."
+  type        = bool
+  default     = true
+}
+
+variable "purchase_limit_per_ip" {
+  description = "Max POST /api/boletos requests per IP in each 5-minute window when enable_waf is true (WAF minimum is 10)."
+  type        = number
+  default     = 20
+
+  validation {
+    condition     = var.purchase_limit_per_ip >= 10
+    error_message = "purchase_limit_per_ip must be at least 10 (AWS WAF minimum)."
+  }
+}
+
 variable "project_name" {
   description = "Prefix for all resource names. Lowercase letters, numbers and dashes."
   type        = string

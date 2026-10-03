@@ -9,6 +9,12 @@ resource "random_password" "token_secret" {
   special = false
 }
 
+# Sent by CloudFront to the API origin; the Lambda rejects requests without it.
+resource "random_password" "origin_verify" {
+  length  = 48
+  special = false
+}
+
 # Signs admin session tokens. Changing it logs out every admin session.
 resource "aws_ssm_parameter" "token_secret" {
   name  = "/${var.project_name}/token-secret"

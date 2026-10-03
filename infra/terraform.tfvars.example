@@ -1,5 +1,6 @@
 # Copy to terraform.tfvars and fill in. terraform.tfvars is git-ignored.
 aws_region           = "us-east-1"
+aws_profile          = "account" # or remove to use the default credentials
 project_name         = "rifa"
 raffle_name          = "Gran Rifa de 1.000.000"
 ticket_price         = 25000
@@ -9,3 +10,4 @@ payment_instructions = "Nequi o Daviplata: 300 123 4567 a nombre de Juan Pérez"
 whatsapp_number      = "573001234567"
 reservation_hours    = 24
 admin_password       = "cambia-esta-clave-larga"
+enable_waf           = true # per-IP purchase rate limit, ~6 USD/month

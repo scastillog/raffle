@@ -61,7 +61,9 @@ defined as string grids, typewriter text, pixel-dissolve exit); shown once per b
 **Infra (`infra/*.tf`)** — Terraform, one file per concern: `dynamodb.tf` (3 on-demand tables),
 `lambda.tf`, `api.tf` (API Gateway HTTP API), `frontend.tf` (S3 + CloudFront with OAC, HTML/JS/CSS
 served with `Cache-Control: no-cache` so edits are visible immediately after `terraform apply`),
-`secrets.tf` (SSM SecureString params for admin password + token secret). State is local by default;
+`secrets.tf` (SSM SecureString params for admin password + token secret, plus the CloudFront→API
+`X-Origin-Verify` secret the Lambda checks), `waf.tf` (optional per-IP rate limit on `POST /api/boletos`,
+`enable_waf`). AWS profile comes from `var.aws_profile` (null = default credential chain). State is local by default;
 S3 backend is commented out in `versions.tf` for shared setups. Raffle parameters (price, prize, draw
 date, payment instructions, WhatsApp number, reservation window) are all Terraform variables, not
 hardcoded, and flow into the Lambda as env vars.
