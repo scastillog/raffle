@@ -54,7 +54,9 @@ released back to the pool when a ticket is cancelled or its reservation expires.
 **Frontend (`frontend/`)** — no framework, no build: `index.html`/`app.js` is the public page (3
 selection modes: `libre` pick 2, `pareja` pick 1 get its pair at `+500 mod 1000`, `azar` random);
 `admin.html`/`admin.js` is the admin page (login, confirm/cancel, declare winner). Both talk directly
-to `/api/*`.
+to `/api/*`. `intro.js`/`intro.css` is the pixel-art intro overlay on the public page (canvas sprites
+defined as string grids, typewriter text, pixel-dissolve exit); shown once per browser session
+(`sessionStorage`), replayable from the hero link. The message text is at the top of `intro.js`.
 
 **Infra (`infra/*.tf`)** — Terraform, one file per concern: `dynamodb.tf` (3 on-demand tables),
 `lambda.tf`, `api.tf` (API Gateway HTTP API), `frontend.tf` (S3 + CloudFront with OAC, HTML/JS/CSS

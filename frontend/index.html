@@ -6,10 +6,25 @@
   <title>Rifa</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;600;700&family=Space+Grotesk:wght@500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;600;700&family=Space+Grotesk:wght@500;700&family=Space+Mono:wght@400;700&family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="intro.css">
+  <script>
+    // Hide the intro before first paint if it was already seen this session.
+    try { if (sessionStorage.getItem('rifa-intro-visto') === '1') document.documentElement.classList.add('intro-skip'); } catch (e) {}
+  </script>
 </head>
 <body>
+<div id="intro" role="dialog" aria-modal="true" aria-labelledby="intro-title">
+  <button type="button" id="intro-skip">SALTAR ›</button>
+  <div class="intro-content">
+    <h2 id="intro-title"></h2>
+    <canvas id="intro-art" aria-hidden="true"></canvas>
+    <div id="intro-text" aria-live="polite"></div>
+    <button type="button" class="intro-btn" id="intro-continue" hidden></button>
+  </div>
+  <canvas id="intro-wipe" hidden></canvas>
+</div>
 <main>
   <section class="ticket">
     <div class="ticket-face">
@@ -17,6 +32,7 @@
       <div class="ticket-label">Premio</div>
       <div class="prize" id="prize">—</div>
       <p>Juega con las 3 últimas cifras de la <b id="lottery">Lotería de Boyacá</b>.</p>
+      <button type="button" class="intro-replay" id="intro-replay">♥ Conoce el propósito de esta rifa</button>
     </div>
     <div class="ticket-stub facts">
       <div class="fact">Valor del boleto<b id="price">—</b></div>
@@ -85,6 +101,7 @@
     <button class="btn secondary" id="d-again" type="button">Comprar otro boleto</button>
   </section>
 </main>
+<script src="intro.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

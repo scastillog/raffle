@@ -1,0 +1,321 @@
+// Pixel-art intro shown before the raffle page: a bandaged hand, a beating heart and
+// a typewriter message explaining the purpose, then a pixel dissolve into the page.
+// Shown once per browser session; the "Conoce el propósito" link replays it.
+
+// ---- Edit the message here ------------------------------------------------
+const INTRO_TITLE = 'UNA RIFA CON PROPÓSITO';
+const INTRO_LINES = [
+  'Esta rifa nace con un propósito especial:',
+  'ayudar en la recuperación de una mano que sufrió una lesión grave.',
+  'Cada boleto que compras apoya su tratamiento y rehabilitación.',
+  '¡Gracias por tender la mano!',
+];
+const INTRO_BUTTON = '▶ VER LA RIFA';
+// ---------------------------------------------------------------------------
+
+const SEEN_KEY = 'rifa-intro-visto';
+const AUTO_CONTINUE_MS = 6000;
+
+const PALETTE = {
+  o: '#2a1a10', // outline
+  s: '#e8b48a', // skin
+  h: '#c98d63', // skin shadow
+  w: '#fbf7ec', // bandage
+  g: '#cfc6b0', // bandage fold
+  c: '#0f6b4f', // sleeve
+  C: '#0b4a36', // sleeve stripe
+  r: '#e0453a', // heart
+  l: '#ff9a8a', // heart shine
+};
+
+// 28 x 33, palm facing the viewer; ring and little finger wrapped in bandage.
+const HAND = [
+  '............oo..............',
+  '...........osso.............',
+  '..........osssso.oo.........',
+  '.......oo.ossssoowwo........',
+  '......ossoossssowwwwo.......',
+  '.....ossssossssoggggo.......',
+  '.....ossssossssowwwwo.o.....',
+  '.....ossssossssowwwwoowo....',
+  '.....ossssossssoggggowwwo...',
+  '.....ossssossssowwwwogggo...',
+  '.....ossssossssowwwwowwwo...',
+  '.....ossssossssoggggowwwo...',
+  '..oo.ossssossssowwwwogggo...',
+  '.ossoossssossssowwwwowwwo...',
+  'oshssossssossssossssossso...',
+  'ossssssssshsssshsssshssho...',
+  '.osssssssssssssssssssssho...',
+  '..ossssssssssssssssssssho...',
+  '...ossssssssssssshhhsssho...',
+  '....osssshsssssssssssssho...',
+  '....ossssshhsssssssssssho...',
+  '.....osssssshhhssssssssho...',
+  '.....osssssssssssssssssho...',
+  '.....osssssssssssssssssho...',
+  '......osssssssssssssssso....',
+  '.......osssssssssssssso.....',
+  '........osssssssssssso......',
+  '.......occcccccccccccco.....',
+  '.......occcccccccccccco.....',
+  '.......oCCCCCCCCCCCCCCo.....',
+  '.......occcccccccccccco.....',
+  '.......occcccccccccccco.....',
+  '........oooooooooooooo......',
+];
+
+const HEART_BIG = [
+  '.rrr.rrr.',
+  'rrlrrrrrr',
+  'rlrrrrrrr',
+  'rrrrrrrrr',
+  '.rrrrrrr.',
+  '..rrrrr..',
+  '...rrr...',
+  '....r....',
+];
+
+const HEART_SMALL = [
+  '.rr.rr.',
+  'rlrrrrr',
+  'rrrrrrr',
+  '.rrrrr.',
+  '..rrr..',
+  '...r...',
+];
+
+const SCENE_W = 44;
+const SCENE_H = 46;
+const HAND_X = 8;
+const HAND_Y = 12;
+const HEART_CX = 21; // heart centre, above the middle finger
+const HEART_CY = 5;
+
+function spritePixels(rows, ox, oy) {
+  const pixels = [];
+  rows.forEach((row, y) => {
+    [...row].forEach((ch, x) => {
+      if (ch !== '.') pixels.push({ x: ox + x, y: oy + y, color: PALETTE[ch] });
+    });
+  });
+  return pixels;
+}
+
+function shuffle(list) {
+  for (let i = list.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [list[i], list[j]] = [list[j], list[i]];
+  }
+  return list;
+}
+
+function heartPixels(rows) {
+  return spritePixels(rows, HEART_CX - Math.floor(rows[0].length / 2), HEART_CY - Math.floor(rows.length / 2));
+}
+
+function createScene(canvas, reducedMotion) {
+  const ctx = canvas.getContext('2d');
+  canvas.width = SCENE_W;
+  canvas.height = SCENE_H;
+
+  const hand = spritePixels(HAND, HAND_X, HAND_Y);
+  const revealOrder = reducedMotion ? hand : shuffle([...hand]);
+  const stars = Array.from({ length: 22 }, () => ({
+    x: Math.floor(Math.random() * SCENE_W),
+    y: Math.floor(Math.random() * (SCENE_H - 4)),
+    phase: Math.random() * Math.PI * 2,
+  }));
+  let sparkles = [];
+  let start = null;
+  let raf = 0;
+  const REVEAL_MS = reducedMotion ? 0 : 1600;
+
+  function px(x, y, color) {
+    ctx.fillStyle = color;
+    ctx.fillRect(x, y, 1, 1);
+  }
+
+  function frame(t) {
+    if (start === null) start = t;
+    const elapsed = t - start;
+    // Step time in 1/12 s ticks for a chunky, retro feel.
+    const tick = Math.floor(elapsed / 83);
+
+    ctx.clearRect(0, 0, SCENE_W, SCENE_H);
+
+    for (const s of stars) {
+      const on = reducedMotion || Math.sin(tick * 0.5 + s.phase) > -0.3;
+      if (on) px(s.x, s.y, Math.sin(tick * 0.3 + s.phase) > 0.6 ? '#f0b429' : '#4f7f6a');
+    }
+
+    const shown = REVEAL_MS ? Math.min(hand.length, Math.floor((elapsed / REVEAL_MS) * hand.length)) : hand.length;
+    for (let i = 0; i < shown; i++) px(revealOrder[i].x, revealOrder[i].y, revealOrder[i].color);
+
+    if (shown === hand.length) {
+      const beat = reducedMotion ? false : tick % 10 < 2 || (tick % 10 >= 3 && tick % 10 < 5);
+      for (const p of heartPixels(beat ? HEART_BIG : HEART_SMALL)) px(p.x, p.y, p.color);
+
+      // Healing sparkles drifting up from the hand.
+      if (!reducedMotion && tick !== frame.lastTick) {
+        frame.lastTick = tick;
+        if (Math.random() < 0.45) {
+          sparkles.push({ x: HAND_X + 3 + Math.floor(Math.random() * 21), y: HAND_Y + 12, life: 14 });
+        }
+        sparkles = sparkles
+          .map((s) => ({ ...s, y: s.y - 1, x: s.x + (Math.random() < 0.2 ? (Math.random() < 0.5 ? -1 : 1) : 0), life: s.life - 1 }))
+          .filter((s) => s.life > 0 && s.y > 0);
+      }
+      for (const s of sparkles) {
+        const color = s.life > 6 ? '#f0b429' : '#a8d5b9';
+        px(s.x, s.y, color);
+        if (s.life > 9) {
+          px(s.x - 1, s.y, color);
+          px(s.x + 1, s.y, color);
+          px(s.x, s.y - 1, color);
+          px(s.x, s.y + 1, color);
+        }
+      }
+    }
+
+    raf = requestAnimationFrame(frame);
+  }
+
+  return {
+    revealMs: REVEAL_MS,
+    start() { raf = requestAnimationFrame(frame); },
+    stop() { cancelAnimationFrame(raf); },
+  };
+}
+
+// Pixel dissolve: cover the screen with blocks, then clear them in random order.
+function pixelDissolve(canvas, color, durationMs) {
+  return new Promise((resolve) => {
+    const ctx = canvas.getContext('2d');
+    const dpr = window.devicePixelRatio || 1;
+    const w = window.innerWidth;
+    const h = window.innerHeight;
+    canvas.width = Math.ceil(w * dpr);
+    canvas.height = Math.ceil(h * dpr);
+    ctx.scale(dpr, dpr);
+    const size = Math.max(16, Math.round(Math.min(w, h) / 18));
+    const blocks = [];
+    for (let y = 0; y < h; y += size) for (let x = 0; x < w; x += size) blocks.push([x, y]);
+    shuffle(blocks);
+    ctx.fillStyle = color;
+    ctx.fillRect(0, 0, w, h);
+    canvas.hidden = false;
+
+    let cleared = 0;
+    let start = null;
+    function step(t) {
+      if (start === null) start = t;
+      const target = Math.min(blocks.length, Math.ceil(((t - start) / durationMs) * blocks.length));
+      for (; cleared < target; cleared++) ctx.clearRect(blocks[cleared][0], blocks[cleared][1], size, size);
+      if (cleared < blocks.length) requestAnimationFrame(step);
+      else resolve();
+    }
+    requestAnimationFrame(step);
+  });
+}
+
+function sleep(ms) {
+  return new Promise((r) => setTimeout(r, ms));
+}
+
+function playIntro() {
+  const overlay = document.getElementById('intro');
+  if (!overlay) return;
+  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const content = overlay.querySelector('.intro-content');
+  const textBox = document.getElementById('intro-text');
+  const continueBtn = document.getElementById('intro-continue');
+  const skipBtn = document.getElementById('intro-skip');
+  const wipe = document.getElementById('intro-wipe');
+
+  document.getElementById('intro-title').textContent = INTRO_TITLE;
+  continueBtn.textContent = INTRO_BUTTON;
+  textBox.replaceChildren();
+  continueBtn.hidden = true;
+  wipe.hidden = true;
+  content.hidden = false;
+  overlay.classList.remove('intro-leaving');
+  overlay.hidden = false;
+  document.documentElement.classList.remove('intro-skip');
+  document.documentElement.classList.add('intro-open');
+
+  const scene = createScene(document.getElementById('intro-art'), reducedMotion);
+  scene.start();
+
+  let finished = false;
+  let fastForward = false;
+  let autoTimer = 0;
+
+  async function close() {
+    if (finished) return;
+    finished = true;
+    clearTimeout(autoTimer);
+    document.removeEventListener('keydown', onKey);
+    try { sessionStorage.setItem(SEEN_KEY, '1'); } catch { /* private mode */ }
+    if (!reducedMotion) {
+      const bg = getComputedStyle(overlay).backgroundColor;
+      overlay.classList.add('intro-leaving'); // transparent background, content hidden
+      content.hidden = true;
+      await pixelDissolve(wipe, bg, 650);
+    }
+    scene.stop();
+    overlay.hidden = true;
+    document.documentElement.classList.remove('intro-open');
+  }
+
+  function onKey(e) {
+    if (e.key === 'Escape') close();
+    else if (e.key === 'Enter' || e.key === ' ') {
+      if (continueBtn.hidden) fastForward = true;
+      else close();
+      e.preventDefault();
+    }
+  }
+
+  async function typeLines() {
+    await sleep(scene.revealMs + 500);
+    for (const line of INTRO_LINES) {
+      if (finished) return;
+      const p = document.createElement('p');
+      const cursor = document.createElement('span');
+      cursor.className = 'intro-cursor';
+      textBox.append(p);
+      if (reducedMotion || fastForward) {
+        p.textContent = line;
+        continue;
+      }
+      for (let i = 1; i <= line.length && !fastForward; i++) {
+        p.textContent = line.slice(0, i);
+        p.append(cursor);
+        await sleep(line[i - 1] === ',' || line[i - 1] === '.' ? 160 : 38);
+      }
+      p.textContent = line;
+      if (!fastForward) await sleep(650);
+    }
+    if (finished) return;
+    continueBtn.hidden = false;
+    continueBtn.focus({ preventScroll: true });
+    autoTimer = setTimeout(close, AUTO_CONTINUE_MS);
+  }
+
+  overlay.onclick = (e) => {
+    if (e.target === skipBtn || e.target === continueBtn) return;
+    if (continueBtn.hidden) fastForward = true; // tap to finish the typing
+  };
+  skipBtn.onclick = close;
+  continueBtn.onclick = close;
+  document.addEventListener('keydown', onKey);
+  typeLines();
+}
+
+document.getElementById('intro-replay')?.addEventListener('click', playIntro);
+
+let seen = false;
+try { seen = sessionStorage.getItem(SEEN_KEY) === '1'; } catch { /* private mode */ }
+if (!seen) playIntro();
+else document.getElementById('intro').hidden = true;

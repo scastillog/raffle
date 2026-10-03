@@ -3,7 +3,8 @@
 Raffle website: numbers **000–999**, each ticket costs **25.000 COP** and gets **2 numbers**, prize **1.000.000 COP**.
 The winner is the **last 3 digits of the Lotería de Boyacá** main prize on the draw date.
 
-- `/` – public page (Spanish): pick numbers, reserve, get payment instructions.
+- `/` – public page (Spanish): opens with a pixel-art intro about the raffle's purpose, then pick numbers,
+  reserve, get payment instructions. Edit the intro message at the top of `frontend/intro.js`.
 - `/admin.html` – admin page: confirm payments, cancel tickets, register the lottery result.
 
 ## How it works
