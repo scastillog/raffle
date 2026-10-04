@@ -237,3 +237,5 @@ td.nums { font: 700 1rem var(--font-mono); }
   font-weight: 600;
 }
 .pick-bar b { font: 700 1rem var(--font-mono); color: var(--gold); }
+
+.pick-bar .pick-notice { background: var(--gold); color: var(--brand); padding: 2px 8px; border-radius: var(--radius); font-weight: 700; }

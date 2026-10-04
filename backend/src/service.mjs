@@ -49,11 +49,11 @@ export const raffleInfo = {
   totalNumbers: TOTAL_NUMBERS,
 };
 
-async function scanAll(table) {
+async function scanAll(table, params = {}) {
   const items = [];
   let ExclusiveStartKey;
   do {
-    const page = await db.send(new ScanCommand({ TableName: table, ExclusiveStartKey }));
+    const page = await db.send(new ScanCommand({ TableName: table, ExclusiveStartKey, ...params }));
     items.push(...page.Items);
     ExclusiveStartKey = page.LastEvaluatedKey;
   } while (ExclusiveStartKey);
@@ -278,42 +278,65 @@ async function getTicket(id) {
   return Item;
 }
 
+// Transaction items that mark a pending ticket and its numbers as paid.
+function confirmItems(ticket, now) {
+  return [
+    {
+      Update: {
+        TableName: TICKETS_TABLE,
+        Key: { id: ticket.id },
+        UpdateExpression: 'SET #s = :pagado, paidAt = :now',
+        ConditionExpression: '#s = :pendiente',
+        ExpressionAttributeNames: { '#s': 'status' },
+        ExpressionAttributeValues: { ':pagado': 'pagado', ':pendiente': 'pendiente', ':now': now },
+      },
+    },
+    // Still works after the reservation expired, as long as nobody else took the numbers.
+    ...ticket.numbers.map((num) => ({
+      Update: {
+        TableName: NUMBERS_TABLE,
+        Key: { num },
+        UpdateExpression: 'SET #s = :pagado REMOVE expiresAt',
+        ConditionExpression: 'ticketId = :id',
+        ExpressionAttributeNames: { '#s': 'status' },
+        ExpressionAttributeValues: { ':pagado': 'pagado', ':id': ticket.id },
+      },
+    })),
+  ];
+}
+
+async function confirmAll(tickets, now, conflictMessage) {
+  try {
+    await db.send(new TransactWriteCommand({ TransactItems: tickets.flatMap((t) => confirmItems(t, now)) }));
+  } catch (err) {
+    if (err.name !== 'TransactionCanceledException') throw err;
+    throw new HttpError(409, conflictMessage);
+  }
+}
+
 export async function confirmTicket(id, now = Date.now()) {
   const ticket = await getTicket(id);
   if (ticket.status !== 'pendiente') throw new HttpError(409, `El boleto está ${ticket.status}.`);
-  try {
-    await db.send(
-      new TransactWriteCommand({
-        TransactItems: [
-          {
-            Update: {
-              TableName: TICKETS_TABLE,
-              Key: { id },
-              UpdateExpression: 'SET #s = :pagado, paidAt = :now',
-              ConditionExpression: '#s = :pendiente',
-              ExpressionAttributeNames: { '#s': 'status' },
-              ExpressionAttributeValues: { ':pagado': 'pagado', ':pendiente': 'pendiente', ':now': now },
-            },
-          },
-          // Still works after the reservation expired, as long as nobody else took the numbers.
-          ...ticket.numbers.map((num) => ({
-            Update: {
-              TableName: NUMBERS_TABLE,
-              Key: { num },
-              UpdateExpression: 'SET #s = :pagado REMOVE expiresAt',
-              ConditionExpression: 'ticketId = :id',
-              ExpressionAttributeNames: { '#s': 'status' },
-              ExpressionAttributeValues: { ':pagado': 'pagado', ':id': id },
-            },
-          })),
-        ],
-      }),
-    );
-  } catch (err) {
-    if (err.name !== 'TransactionCanceledException') throw err;
-    throw new HttpError(409, 'La reserva venció y otra persona tomó estos números. Cancela este boleto.');
-  }
+  await confirmAll([ticket], now, 'La reserva venció y otra persona tomó estos números. Cancela este boleto.');
   return { ok: true };
+}
+
+// Confirms every still-pending ticket of an order at once (one payment usually covers the whole order).
+// All-or-nothing: if any ticket's numbers were lost after expiring, nothing is confirmed.
+export async function confirmOrder(orderId, now = Date.now()) {
+  const tickets = await scanAll(TICKETS_TABLE, {
+    FilterExpression: 'orderId = :o',
+    ExpressionAttributeValues: { ':o': orderId },
+  });
+  if (tickets.length === 0) throw new HttpError(404, 'Pedido no encontrado.');
+  const pending = tickets.filter((t) => t.status === 'pendiente');
+  if (pending.length === 0) throw new HttpError(409, 'Este pedido no tiene boletos pendientes de pago.');
+  await confirmAll(
+    pending,
+    now,
+    'Un boleto del pedido venció y otra persona tomó sus números. Confirma o cancela los boletos uno por uno.',
+  );
+  return { ok: true, confirmed: pending.map((t) => t.id) };
 }
 
 export async function cancelTicket(id, now = Date.now()) {

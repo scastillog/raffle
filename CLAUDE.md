@@ -49,7 +49,9 @@ read-then-write calls when touching `createTicket`/`confirmTicket`/`cancelTicket
 
 A purchase (order) can hold 1–4 tickets (`MAX_TICKETS_PER_ORDER`, one selection mode for all): `createTicket`
 builds N ticket rows (2 numbers each, shared `orderId`) and reserves *all* their numbers in that one transaction, so
-an order is all-or-nothing. After that each ticket is confirmed/cancelled independently.
+an order is all-or-nothing. After that tickets can be confirmed one by one, or the whole order at once with
+`confirmOrder` (`POST /api/admin/pedidos/{orderId}/confirmar`, one transaction over its pending tickets). The buyer
+sees the order code on the confirmation screen and in the WhatsApp message when the order has 2+ tickets.
 
 Ticket/number status lifecycle: `pendiente` (reserved, unpaid) → `pagado` (admin confirmed) or
 `cancelado`/expired (`vencido`, computed on read from `expiresAt`, not stored). Numbers are only ever

@@ -4,6 +4,7 @@ import { HttpError } from './raffle.mjs';
 import {
   cancelTicket,
   clearWinner,
+  confirmOrder,
   confirmTicket,
   createTicket,
   declareWinner,
@@ -76,6 +77,8 @@ async function route(event) {
     if (method === 'POST' && action) {
       return action[2] === 'confirmar' ? confirmTicket(action[1]) : cancelTicket(action[1]);
     }
+    const order = path.match(/^\/api\/admin\/pedidos\/([A-Z0-9]+)\/confirmar$/);
+    if (method === 'POST' && order) return confirmOrder(order[1]);
     if (method === 'POST' && path === '/api/admin/ganador') return declareWinner(parseBody(event));
     if (method === 'DELETE' && path === '/api/admin/ganador') return clearWinner();
     if (method === 'POST' && path === '/api/admin/codigo/regenerar') return regenerateVerificationCode();

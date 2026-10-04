@@ -58,6 +58,8 @@ function buyLabel() {
 }
 
 function renderSelection() {
+  clearTimeout(noticeTimer);
+  $('pick-count').classList.remove('pick-notice');
   renderChips($('chips'), allNumbers(), 2 * state.quantity);
   const total = state.info ? cop.format(state.quantity * state.info.ticketPrice) : '';
   $('pick-count').textContent = `${allNumbers().length} de ${2 * state.quantity} números`;
@@ -108,11 +110,28 @@ function renderGrid() {
   }
 }
 
+let noticeTimer = 0;
+
+// Temporarily replaces the "x de y números" counter with a hint.
+function showPickNotice(text) {
+  clearTimeout(noticeTimer);
+  $('pick-count').textContent = text;
+  $('pick-count').classList.add('pick-notice');
+  noticeTimer = setTimeout(renderSelection, 3500);
+}
+
 function toggle(n) {
   if (state.selected.includes(n)) {
     state.selected = state.selected.filter((x) => x !== n);
-  } else if (!partners().includes(n)) {
-    state.selected = [...state.selected, n].slice(-selectionLimit());
+  } else if (partners().includes(n)) {
+    return;
+  } else if (state.selected.length >= selectionLimit()) {
+    // Never drop an earlier pick silently: with several tickets it would also re-pair the numbers.
+    const q = state.quantity;
+    showPickNotice(`Ya elegiste tus ${2 * q} números. Toca uno de los tuyos para quitarlo o elige más boletos.`);
+    return;
+  } else {
+    state.selected = [...state.selected, n];
   }
   renderGrid();
   renderSelection();
@@ -197,6 +216,12 @@ function showDone(order) {
   $('buy-card').classList.add('hidden');
   $('done-card').classList.remove('hidden');
   $('d-title').textContent = `✅ ¡${plural(count, 'Boleto reservado', 'Boletos reservados')}!`;
+  // The order code lets the organizer confirm all tickets of one payment at once.
+  $('d-order').classList.toggle('hidden', count === 1);
+  $('d-order-id').textContent = order.orderId;
+  $('d-proof').textContent = count === 1
+    ? 'Después de pagar, envía el comprobante por WhatsApp con tu código de boleto.'
+    : 'Después de pagar, envía el comprobante por WhatsApp con tu código de pedido.';
   const list = $('d-tickets');
   list.replaceChildren();
   for (const t of order.tickets) {
@@ -217,7 +242,10 @@ function showDone(order) {
   $('d-price').textContent = cop.format(count * info.ticketPrice);
   $('d-payment').textContent = info.paymentInstructions;
   const detail = order.tickets.map((t) => `${t.id} (${t.numbers.join(' y ')})`).join(', ');
-  const msg = `Hola, pagué ${plural(count, 'el boleto', 'los boletos')} ${detail} de la rifa. Adjunto el comprobante.`;
+  const total = cop.format(count * info.ticketPrice);
+  const msg = count === 1
+    ? `Hola, pagué el boleto ${detail} de la rifa (${total}). Adjunto el comprobante.`
+    : `Hola, pagué el pedido ${order.orderId} de la rifa: boletos ${detail} (${total}). Adjunto el comprobante.`;
   $('d-whatsapp').href = `https://wa.me/${info.whatsappNumber}?text=${encodeURIComponent(msg)}`;
   $('done-card').scrollIntoView({ behavior: 'smooth' });
 }

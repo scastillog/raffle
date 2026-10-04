@@ -112,11 +112,12 @@
 
     <section class="card hidden" id="done-card">
       <h2 id="d-title">✅ ¡Boleto reservado!</h2>
+      <p id="d-order" class="hidden">Código del pedido: <b id="d-order-id"></b></p>
       <div id="d-tickets"></div>
       <p>Tienes <b id="d-hours"></b> horas para pagar <b id="d-price"></b>. Si no pagas, los números se liberan.</p>
       <h3>Cómo pagar</h3>
       <p id="d-payment" style="white-space:pre-line"></p>
-      <p>Después de pagar, envía el comprobante por WhatsApp con tus códigos de boleto.</p>
+      <p id="d-proof">Después de pagar, envía el comprobante por WhatsApp con tu código de boleto.</p>
       <a class="btn" id="d-whatsapp" target="_blank" rel="noopener">Enviar comprobante por WhatsApp</a>
       <button class="btn secondary" id="d-again" type="button">Comprar más boletos</button>
     </section>

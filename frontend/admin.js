@@ -89,7 +89,20 @@ function visibleTickets() {
   });
 }
 
+const confirmable = (t) => t.status === 'pendiente' || t.status === 'vencido';
+
+// Tickets of the same order still waiting for payment, keyed by orderId.
+function pendingByOrder() {
+  const map = new Map();
+  for (const t of state.data.tickets) {
+    if (!t.orderId || !confirmable(t)) continue;
+    map.set(t.orderId, [...(map.get(t.orderId) ?? []), t]);
+  }
+  return map;
+}
+
 function renderRows() {
+  const orders = pendingByOrder();
   const rows = visibleTickets().map((t) => {
     const tr = document.createElement('tr');
     const badge = document.createElement('span');
@@ -109,8 +122,12 @@ function renderRows() {
     const actions = document.createElement('td');
     const wrap = document.createElement('div');
     wrap.className = 'row-actions';
-    if (t.status === 'pendiente' || t.status === 'vencido') {
-      wrap.append(actionButton('Confirmar pago', '', () => act(t, 'confirmar')));
+    const orderPending = t.orderId ? orders.get(t.orderId) ?? [] : [];
+    if (confirmable(t) && orderPending.length > 1) {
+      wrap.append(actionButton(`Confirmar pedido (${orderPending.length})`, '', () => confirmOrder(t.orderId, orderPending)));
+    }
+    if (confirmable(t)) {
+      wrap.append(actionButton(orderPending.length > 1 ? 'Solo este' : 'Confirmar pago', orderPending.length > 1 ? 'secondary' : '', () => act(t, 'confirmar')));
     }
     if (t.status !== 'cancelado') {
       wrap.append(actionButton('Cancelar', 'danger', () => act(t, 'cancelar')));
@@ -119,6 +136,7 @@ function renderRows() {
 
     tr.append(
       cell(t.id),
+      cell(t.orderId ?? '—'),
       cell(t.numbers.join(' · '), 'nums'),
       cell(t.name),
       phoneTd,
@@ -190,6 +208,18 @@ async function act(ticket, action) {
   if (!confirm(`¿Seguro que quieres ${verb} el boleto ${ticket.id} (${ticket.numbers.join(' y ')}) de ${ticket.name}?`)) return;
   try {
     await api('POST', `/api/admin/boletos/${ticket.id}/${action}`);
+  } catch (err) {
+    alert(err.message);
+  }
+  refresh();
+}
+
+async function confirmOrder(orderId, tickets) {
+  const total = cop.format(tickets.length * state.data.info.ticketPrice);
+  const list = tickets.map((t) => `${t.id} (${t.numbers.join(' y ')})`).join('\n');
+  if (!confirm(`¿Confirmar el pago del pedido ${orderId} de ${tickets[0].name}? ${tickets.length} boletos, ${total}:\n${list}`)) return;
+  try {
+    await api('POST', `/api/admin/pedidos/${orderId}/confirmar`);
   } catch (err) {
     alert(err.message);
   }
