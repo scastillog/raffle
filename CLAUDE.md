@@ -47,6 +47,10 @@ number being free (never used, or a previously *reserved* row whose `expiresAt` 
 what guarantees two buyers can never get the same number — don't bypass it with separate
 read-then-write calls when touching `createTicket`/`confirmTicket`/`cancelTicket`.
 
+A purchase (order) can hold 1–4 tickets (`MAX_TICKETS_PER_ORDER`, one selection mode for all): `createTicket`
+builds N ticket rows (2 numbers each, shared `orderId`) and reserves *all* their numbers in that one transaction, so
+an order is all-or-nothing. After that each ticket is confirmed/cancelled independently.
+
 Ticket/number status lifecycle: `pendiente` (reserved, unpaid) → `pagado` (admin confirmed) or
 `cancelado`/expired (`vencido`, computed on read from `expiresAt`, not stored). Numbers are only ever
 released back to the pool when a ticket is cancelled or its reservation expires.

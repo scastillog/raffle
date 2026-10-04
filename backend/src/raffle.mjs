@@ -3,6 +3,7 @@ import { randomInt } from 'node:crypto';
 
 export const TOTAL_NUMBERS = 1000;
 export const NUMBERS_PER_TICKET = 2;
+export const MAX_TICKETS_PER_ORDER = 4;
 // In "pareja" mode the second number is always the first one + 500 (e.g. 123 -> 623).
 export const PAIR_OFFSET = 500;
 export const MODES = ['libre', 'pareja', 'azar'];
@@ -87,35 +88,59 @@ export function pickRandom(list, count, rand = randomInt) {
   return picked;
 }
 
-// Turns the buyer's request into the two numbers to reserve, or throws HttpError.
-export function resolveSelection(mode, requested, takenSet, rand = randomInt) {
+// Quantity of tickets in one purchase: 1..MAX_TICKETS_PER_ORDER (missing = 1), otherwise null.
+export function normalizeQuantity(value) {
+  if (value === undefined || value === null || value === '') return 1;
+  const n = Number(value);
+  return Number.isInteger(n) && n >= 1 && n <= MAX_TICKETS_PER_ORDER ? n : null;
+}
+
+// Turns the buyer's request into one sorted pair of numbers per ticket, or throws HttpError.
+export function resolveSelections(mode, requested, quantity, takenSet, rand = randomInt) {
   if (!MODES.includes(mode)) throw new HttpError(400, 'Modo de selección inválido.');
+  const qty = normalizeQuantity(quantity);
+  if (qty === null) throw new HttpError(400, `Puedes comprar de 1 a ${MAX_TICKETS_PER_ORDER} boletos.`);
   const input = Array.isArray(requested) ? requested : [];
   let numbers;
 
   if (mode === 'libre') {
+    const need = qty * NUMBERS_PER_TICKET;
     numbers = input.map(parseNumber);
-    if (numbers.length !== NUMBERS_PER_TICKET || numbers.includes(null)) {
-      throw new HttpError(400, 'Debes elegir exactamente 2 números entre 000 y 999.');
+    if (numbers.length !== need || numbers.includes(null)) {
+      throw new HttpError(400, `Debes elegir exactamente ${need} números entre 000 y 999.`);
     }
-    if (numbers[0] === numbers[1]) throw new HttpError(400, 'Los 2 números deben ser diferentes.');
+    if (new Set(numbers).size !== need) {
+      throw new HttpError(400, qty === 1 ? 'Los 2 números deben ser diferentes.' : 'Los números deben ser todos diferentes.');
+    }
   } else if (mode === 'pareja') {
-    const first = parseNumber(input[0]);
-    if (input.length !== 1 || first === null) {
-      throw new HttpError(400, 'Debes elegir 1 número entre 000 y 999.');
+    const firsts = input.map(parseNumber);
+    if (firsts.length !== qty || firsts.includes(null)) {
+      throw new HttpError(400, `Debes elegir ${qty} ${qty === 1 ? 'número' : 'números'} entre 000 y 999.`);
     }
-    numbers = [first, pairOf(first)];
+    numbers = firsts.flatMap((n) => [n, pairOf(n)]);
+    if (new Set(numbers).size !== numbers.length) {
+      throw new HttpError(400, 'Elegiste un número y su pareja a la vez. Elige números distintos.');
+    }
   } else {
     const free = freeNumbers(takenSet);
-    if (free.length < NUMBERS_PER_TICKET) throw new HttpError(409, 'No quedan números disponibles.');
-    numbers = pickRandom(free, NUMBERS_PER_TICKET, rand);
+    if (free.length < qty * NUMBERS_PER_TICKET) throw new HttpError(409, 'No quedan números disponibles.');
+    numbers = pickRandom(free, qty * NUMBERS_PER_TICKET, rand);
   }
 
   const taken = numbers.filter((n) => takenSet.has(n));
   if (taken.length > 0) {
     throw new HttpError(409, `Ya no está disponible: ${taken.join(', ')}. Elige otro.`);
   }
-  return numbers.sort();
+  const pairs = [];
+  for (let i = 0; i < numbers.length; i += NUMBERS_PER_TICKET) {
+    pairs.push(numbers.slice(i, i + NUMBERS_PER_TICKET).sort());
+  }
+  return pairs;
+}
+
+// Single-ticket convenience: the two numbers of one ticket.
+export function resolveSelection(mode, requested, takenSet, rand = randomInt) {
+  return resolveSelections(mode, requested, 1, takenSet, rand)[0];
 }
 
 // The winner is the last 3 digits of the Lotería de Boyacá main prize number.

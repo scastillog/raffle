@@ -9,12 +9,14 @@ import {
   maskPhone,
   normalizeName,
   normalizePhone,
+  normalizeQuantity,
   normalizeVerificationCode,
   pairOf,
   parseNumber,
   pickRandom,
   publicName,
   resolveSelection,
+  resolveSelections,
   ticketStatus,
 } from '../src/raffle.mjs';
 import { createToken, passwordMatches, verifyToken } from '../src/auth.mjs';
@@ -125,6 +127,40 @@ test('resolveSelection azar only picks free numbers', () => {
   }
   const full = new Set(freeNumbers(new Set()).slice(0, 999));
   assert.throws(() => resolveSelection('azar', [], full), /No quedan/);
+});
+
+test('normalizeQuantity accepts 1 to 4 and defaults to 1', () => {
+  assert.equal(normalizeQuantity(undefined), 1);
+  assert.equal(normalizeQuantity(''), 1);
+  assert.equal(normalizeQuantity(4), 4);
+  assert.equal(normalizeQuantity('3'), 3);
+  for (const bad of [0, 5, -1, 1.5, 'abc', NaN]) assert.equal(normalizeQuantity(bad), null);
+});
+
+test('resolveSelections libre builds one pair per ticket', () => {
+  assert.deepEqual(resolveSelections('libre', ['850', '7', '1', '2'], 2, new Set()), [['007', '850'], ['001', '002']]);
+  assert.throws(() => resolveSelections('libre', ['1', '2'], 2, new Set()), /4 números/);
+  assert.throws(() => resolveSelections('libre', ['1', '2', '3', '1'], 2, new Set()), /diferentes/);
+  assert.throws(() => resolveSelections('libre', ['1', '2', '3', '4'], 2, new Set(['004'])), /004/);
+  assert.throws(() => resolveSelections('libre', ['1', '2'], 5, new Set()), /1 a 4/);
+});
+
+test('resolveSelections pareja pairs each pick with its +500 partner', () => {
+  assert.deepEqual(resolveSelections('pareja', ['123', '001'], 2, new Set()), [['123', '623'], ['001', '501']]);
+  assert.throws(() => resolveSelections('pareja', ['123', '623'], 2, new Set()), /pareja/);
+  assert.throws(() => resolveSelections('pareja', ['123'], 2, new Set()), HttpError);
+  assert.throws(() => resolveSelections('pareja', ['123', '001'], 2, new Set(['501'])), /501/);
+});
+
+test('resolveSelections azar gives distinct free pairs', () => {
+  const taken = new Set(freeNumbers(new Set()).slice(0, 992)); // only 992..999 free
+  const pairs = resolveSelections('azar', [], 4, taken);
+  assert.equal(pairs.length, 4);
+  const all = pairs.flat();
+  assert.equal(new Set(all).size, 8);
+  for (const n of all) assert.ok(Number(n) >= 992);
+  const nearlyFull = new Set(freeNumbers(new Set()).slice(0, 993));
+  assert.throws(() => resolveSelections('azar', [], 4, nearlyFull), /No quedan/);
 });
 
 test('resolveSelection rejects unknown modes', () => {

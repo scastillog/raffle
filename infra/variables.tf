@@ -93,3 +93,20 @@ variable "admin_password" {
     error_message = "admin_password must be at least 12 characters."
   }
 }
+
+variable "custom_domain" {
+  description = "Custom domain served by CloudFront (e.g. rifamanosanti.lat). Leave null to use the *.cloudfront.net domain."
+  type        = string
+  default     = null
+}
+
+variable "acm_certificate_arn" {
+  description = "ACM certificate ARN (must be in us-east-1) covering custom_domain. Required when custom_domain is set."
+  type        = string
+  default     = null
+
+  validation {
+    condition     = var.custom_domain == null || var.acm_certificate_arn != null
+    error_message = "acm_certificate_arn is required when custom_domain is set."
+  }
+}

@@ -108,7 +108,7 @@ h1, h2, h3 { font-family: var(--font-display); font-weight: 700; line-height: 1.
 .legend .l-sold::before { background: var(--sold); }
 .legend .l-sel::before { background: var(--brand); }
 
-.chips { display: flex; gap: 8px; margin: 8px 0; min-height: 40px; align-items: center; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0; min-height: 40px; align-items: center; }
 .chip {
   font: 700 1.3rem/1 var(--font-mono);
   background: var(--brand); color: var(--brand-ink);
@@ -216,3 +216,24 @@ td.nums { font: 700 1rem var(--font-mono); }
   .grid { grid-template-columns: repeat(5, 1fr); gap: 6px; }
   .num { padding: 12px 0; font-size: .85rem; }
 }
+
+.ticket-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin: 4px 0; }
+.ticket-row .chips { margin: 0; min-height: 0; }
+.chip-pair { display: flex; gap: 6px; padding: 6px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--paper); }
+.chip-pair .chip { font-size: 1.1rem; padding: 6px 10px; }
+
+.segmented { display: grid; grid-template-columns: repeat(4, 1fr); margin-bottom: 14px; border: 1px solid var(--brand); border-radius: var(--radius); overflow: hidden; }
+.segmented button {
+  border: 0; border-left: 1px solid var(--brand); background: var(--surface); color: var(--ink);
+  font: 700 1.2rem var(--font-mono); padding: 10px 0; cursor: pointer;
+}
+.segmented button:first-child { border-left: 0; }
+.segmented button[aria-pressed="true"] { background: var(--brand); color: var(--brand-ink); }
+.segmented button:focus-visible { outline: 3px solid var(--gold); outline-offset: -3px; }
+
+.pick-bar {
+  position: sticky; bottom: 0; display: flex; justify-content: space-between; align-items: center; gap: 12px;
+  margin: 12px -18px -4px; padding: 10px 18px; background: var(--brand); color: var(--brand-ink);
+  font-weight: 600;
+}
+.pick-bar b { font: 700 1rem var(--font-mono); color: var(--gold); }

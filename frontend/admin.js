@@ -85,7 +85,7 @@ function visibleTickets() {
   return state.data.tickets.filter((t) => {
     if (state.filter !== 'todos' && t.status !== state.filter) return false;
     if (!q) return true;
-    return [t.id, t.name, t.phone, t.verificationCode ?? '', ...t.numbers].some((v) => v.toLowerCase().includes(q));
+    return [t.id, t.orderId ?? '', t.name, t.phone, t.verificationCode ?? '', ...t.numbers].some((v) => v.toLowerCase().includes(q));
   });
 }
 
@@ -197,10 +197,10 @@ async function act(ticket, action) {
 }
 
 function exportCsv() {
-  const header = ['codigo', 'numero1', 'numero2', 'nombre', 'celular', 'modo', 'codigo_verificacion', 'estado', 'creado'];
+  const header = ['codigo', 'pedido', 'numero1', 'numero2', 'nombre', 'celular', 'modo', 'codigo_verificacion', 'estado', 'creado'];
   const esc = (v) => `"${String(v).replace(/"/g, '""')}"`;
   const lines = state.data.tickets.map((t) =>
-    [t.id, t.numbers[0], t.numbers[1], t.name, t.phone, t.mode, t.verificationCode ?? '', t.status, new Date(t.createdAt).toISOString()].map(esc).join(','),
+    [t.id, t.orderId ?? '', t.numbers[0], t.numbers[1], t.name, t.phone, t.mode, t.verificationCode ?? '', t.status, new Date(t.createdAt).toISOString()].map(esc).join(','),
   );
   const blob = new Blob([`﻿${header.join(',')}\n${lines.join('\n')}`], { type: 'text/csv;charset=utf-8' });
   const a = document.createElement('a');

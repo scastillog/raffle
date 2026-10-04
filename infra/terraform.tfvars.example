@@ -12,3 +12,7 @@ reservation_hours    = 24
 admin_password       = "cambia-esta-clave-larga"
 purchase_rate_limit  = 2 # purchases/second shared by all buyers; raise if buyers get "muchas solicitudes"
 purchase_burst_limit = 5
+
+# Optional custom domain (certificate must be in us-east-1). Point your DNS at the CloudFront domain.
+# custom_domain       = "rifa.example.com"
+# acm_certificate_arn = "arn:aws:acm:us-east-1:123456789012:certificate/..."

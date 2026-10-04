@@ -61,8 +61,7 @@ resource "aws_cloudfront_distribution" "site" {
   enabled             = true
   comment             = var.raffle_name
   default_root_object = "index.html"
-  price_class         = "PriceClass_100"
-  http_version        = "http2and3"
+
 
   origin {
     origin_id                = "s3"
@@ -116,8 +115,22 @@ resource "aws_cloudfront_distribution" "site" {
     }
   }
 
+  aliases = var.custom_domain == null ? [] : [var.custom_domain]
+
   viewer_certificate {
-    cloudfront_default_certificate = true
+    cloudfront_default_certificate = var.acm_certificate_arn == null ? true : null
+    acm_certificate_arn            = var.acm_certificate_arn
+    ssl_support_method             = var.acm_certificate_arn == null ? null : "sni-only"
+    minimum_protocol_version       = var.acm_certificate_arn == null ? "TLSv1" : "TLSv1.2_2021"
+  }
+
+  tags = {
+    Name = "Raffle"
+  }
+
+  # Flat-rate plans attach a CloudFront-managed WAF web ACL; don't let Terraform detach it.
+  lifecycle {
+    ignore_changes = [web_acl_id]
   }
 }
 

@@ -11,6 +11,7 @@ import {
 } from '@aws-sdk/lib-dynamodb';
 import {
   HttpError,
+  MAX_TICKETS_PER_ORDER,
   TOTAL_NUMBERS,
   isNumberTaken,
   isVerificationCodeValid,
@@ -18,9 +19,10 @@ import {
   maskPhone,
   normalizeName,
   normalizePhone,
+  normalizeQuantity,
   normalizeVerificationCode,
   publicName,
-  resolveSelection,
+  resolveSelections,
   ticketStatus,
 } from './raffle.mjs';
 
@@ -172,9 +174,10 @@ function newTicketId() {
   return Array.from({ length: 8 }, () => alphabet[randomInt(alphabet.length)]).join('');
 }
 
-function reserveTransaction(ticket) {
+// One transaction for the whole order: every number plus every ticket row, or nothing.
+function reserveTransaction(tickets) {
   return new TransactWriteCommand({
-    TransactItems: [
+    TransactItems: tickets.flatMap((ticket) => [
       ...ticket.numbers.map((num) => ({
         Put: {
           TableName: NUMBERS_TABLE,
@@ -192,7 +195,7 @@ function reserveTransaction(ticket) {
           ConditionExpression: 'attribute_not_exists(id)',
         },
       },
-    ],
+    ]),
   });
 }
 
@@ -202,15 +205,19 @@ export async function createTicket(body, now = Date.now()) {
   if (!name) throw new HttpError(400, 'Escribe tu nombre completo.');
   if (!phone) throw new HttpError(400, 'Escribe un celular colombiano válido (10 dígitos, empieza por 3).');
   if (await getWinner()) throw new HttpError(409, 'La rifa ya se jugó. No se venden más boletos.');
+  const quantity = normalizeQuantity(body.quantity);
+  if (quantity === null) throw new HttpError(400, `Puedes comprar de 1 a ${MAX_TICKETS_PER_ORDER} boletos.`);
   await verifyPurchaseCode(body.code, now);
 
   // Random mode retries a few times in case someone grabs the same number concurrently.
   const attempts = body.mode === 'azar' ? 3 : 1;
   for (let attempt = 1; ; attempt++) {
     const taken = new Set(Object.keys(await takenNumbers(now)));
-    const numbers = resolveSelection(body.mode, body.numbers, taken);
-    const ticket = {
+    const pairs = resolveSelections(body.mode, body.numbers, quantity, taken);
+    const orderId = newTicketId();
+    const tickets = pairs.map((numbers) => ({
       id: newTicketId(),
+      orderId,
       name,
       phone,
       numbers,
@@ -219,10 +226,16 @@ export async function createTicket(body, now = Date.now()) {
       verificationCode: normalizeVerificationCode(body.code),
       createdAt: now,
       expiresAt: now + RESERVATION_MS,
-    };
+    }));
     try {
-      await db.send(reserveTransaction(ticket));
-      return { id: ticket.id, numbers, expiresAt: ticket.expiresAt, info: raffleInfo };
+      await db.send(reserveTransaction(tickets));
+      return {
+        orderId,
+        tickets: tickets.map(({ id, numbers }) => ({ id, numbers })),
+        total: tickets.length,
+        expiresAt: now + RESERVATION_MS,
+        info: raffleInfo,
+      };
     } catch (err) {
       if (err.name !== 'TransactionCanceledException') throw err;
       if (attempt >= attempts) {
