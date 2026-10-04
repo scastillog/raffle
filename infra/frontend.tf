@@ -8,6 +8,23 @@ locals {
     png  = "image/png"
     ico  = "image/x-icon"
   }
+
+  # Absolute URL of the site: link-preview crawlers need full https:// URLs for og:url and og:image.
+  site_url = var.custom_domain != null ? "https://${var.custom_domain}" : "https://${aws_cloudfront_distribution.site.domain_name}"
+  html_escape = {
+    title       = replace(replace(replace(replace(var.share_title, "&", "&amp;"), "\"", "&quot;"), "<", "&lt;"), ">", "&gt;")
+    description = replace(replace(replace(replace(var.share_description, "&", "&amp;"), "\"", "&quot;"), "<", "&lt;"), ">", "&gt;")
+  }
+  # HTML pages get their link-preview placeholders filled in; every other file is uploaded as is.
+  rendered_html = {
+    for f in fileset(local.frontend_dir, "**/*.html") : f => replace(replace(replace(replace(
+      file("${local.frontend_dir}/${f}"),
+      "__SITE_URL__", local.site_url),
+      "__SHARE_TITLE__", local.html_escape.title),
+      "__SHARE_DESCRIPTION__", local.html_escape.description),
+      # Changes when the image changes, so WhatsApp/Facebook fetch the new one.
+    "__OG_IMAGE_VERSION__", substr(filemd5("${local.frontend_dir}/og-image.png"), 0, 8))
+  }
 }
 
 resource "aws_s3_bucket" "site" {
@@ -28,8 +45,9 @@ resource "aws_s3_object" "site" {
 
   bucket        = aws_s3_bucket.site.id
   key           = each.value
-  source        = "${local.frontend_dir}/${each.value}"
-  etag          = filemd5("${local.frontend_dir}/${each.value}")
+  source        = contains(keys(local.rendered_html), each.value) ? null : "${local.frontend_dir}/${each.value}"
+  content       = lookup(local.rendered_html, each.value, null)
+  etag          = contains(keys(local.rendered_html), each.value) ? md5(local.rendered_html[each.value]) : filemd5("${local.frontend_dir}/${each.value}")
   content_type  = lookup(local.content_types, reverse(split(".", each.value))[0], "application/octet-stream")
   cache_control = "no-cache" # small site: browsers revalidate, so deploys show up immediately
 }

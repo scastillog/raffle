@@ -94,6 +94,18 @@ variable "admin_password" {
   }
 }
 
+variable "share_title" {
+  description = "Title of the link preview when the site is shared (WhatsApp, Facebook...). Keep it under ~60 characters."
+  type        = string
+  default     = "Rifa solidaria · Premio $1.000.000"
+}
+
+variable "share_description" {
+  description = "Text under the title in the link preview. Keep it under ~150 characters."
+  type        = string
+  default     = "Boletos de $25.000 con 2 números cada uno. Juega con la Lotería de Boyacá y ayúdanos con la recuperación de una mano. ¡Participa!"
+}
+
 variable "custom_domain" {
   description = "Custom domain served by CloudFront (e.g. rifamanosanti.lat). Leave null to use the *.cloudfront.net domain."
   type        = string

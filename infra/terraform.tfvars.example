@@ -16,3 +16,7 @@ purchase_burst_limit = 5
 # Optional custom domain (certificate must be in us-east-1). Point your DNS at the CloudFront domain.
 # custom_domain       = "rifa.example.com"
 # acm_certificate_arn = "arn:aws:acm:us-east-1:123456789012:certificate/..."
+
+# Link preview when the site is shared on WhatsApp/Facebook (image: frontend/og-image.png)
+# share_title       = "Rifa solidaria · Premio $1.000.000"
+# share_description = "Boletos de $25.000 con 2 números cada uno. Juega con la Lotería de Boyacá y ayúdanos con la recuperación de una mano. ¡Participa!"

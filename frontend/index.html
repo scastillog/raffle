@@ -4,7 +4,25 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Rifa</title>
+  <title>__SHARE_TITLE__</title>
+  <!-- Link previews (WhatsApp, Facebook, Telegram, X). Crawlers don't run JavaScript, so these must be
+       static. The __PLACEHOLDERS__ are filled in by Terraform (infra/frontend.tf) when the page is uploaded. -->
+  <meta name="description" content="__SHARE_DESCRIPTION__">
+  <link rel="canonical" href="__SITE_URL__/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="__SHARE_TITLE__">
+  <meta property="og:locale" content="es_CO">
+  <meta property="og:url" content="__SITE_URL__/">
+  <meta property="og:title" content="__SHARE_TITLE__">
+  <meta property="og:description" content="__SHARE_DESCRIPTION__">
+  <meta property="og:image" content="__SITE_URL__/og-image.png?v=__OG_IMAGE_VERSION__">
+  <meta property="og:image:secure_url" content="__SITE_URL__/og-image.png?v=__OG_IMAGE_VERSION__">
+  <meta property="og:image:type" content="image/png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Mano en pixel art vendada con un corazón: rifa solidaria, premio de $1.000.000">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="theme-color" content="#0b4a36">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link

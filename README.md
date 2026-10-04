@@ -68,6 +68,16 @@ Outputs: `site_url` (public page) and `admin_url`. The first CloudFront deployme
 To change texts, prices or code, edit the files and run `terraform apply` again. HTML/JS/CSS are served with
 `Cache-Control: no-cache`, so changes are visible right away.
 
+## Sharing on WhatsApp
+
+`index.html` has Open Graph tags, so a pasted link shows a preview card with title, description and the
+pixel-art image `frontend/og-image.png`. Terraform fills in the absolute URLs (your `custom_domain`) and the
+texts (`share_title`, `share_description`) on upload. If the prize or price change, edit the texts at the
+top of `scripts/gen-og-image.mjs`, run `node scripts/gen-og-image.mjs` (needs Playwright) and deploy.
+
+WhatsApp caches previews per URL. To check or refresh one, paste the URL into
+https://developers.facebook.com/tools/debug/ and press "Scrape Again".
+
 ## Tests
 
 ```bash
