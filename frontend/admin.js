@@ -138,7 +138,7 @@ function renderRows() {
       cell(t.id),
       cell(t.orderId ?? '—'),
       cell(t.numbers.join(' · '), 'nums'),
-      cell(t.name),
+      cell(t.name, 'name'),
       phoneTd,
       cell(MODE_LABEL[t.mode] ?? t.mode),
       statusTd,

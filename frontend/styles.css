@@ -172,7 +172,9 @@ td.nums { font: 700 1rem var(--font-mono); }
 .badge.pendiente { background: var(--reserved); }
 .badge.pagado { background: #cfe6da; color: var(--brand); }
 .badge.vencido, .badge.cancelado { background: var(--line); color: var(--muted); }
-.row-actions { display: flex; gap: 6px; }
+.row-actions { display: flex; flex-wrap: wrap; gap: 6px; min-width: 150px; }
+main.wide { max-width: min(1500px, 96vw); }
+td.name { white-space: normal; min-width: 120px; max-width: 220px; }
 
 /* Verification Code Card */
 .code-card-header {
