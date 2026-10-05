@@ -172,6 +172,11 @@ function renderInfo(info) {
   $('price').textContent = cop.format(info.ticketPrice);
   $('lottery').textContent = info.lottery;
   $('draw-date').textContent = formatDate(info.drawDate);
+  if (info.whatsappNumber) {
+    const text = `Hola, quiero participar en la rifa y tengo una pregunta.`;
+    $('help-link').href = `https://wa.me/${info.whatsappNumber}?text=${encodeURIComponent(text)}`;
+    $('help-note').classList.remove('hidden');
+  }
 }
 
 function renderProgress() {

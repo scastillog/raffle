@@ -241,3 +241,14 @@ td.name { white-space: normal; min-width: 120px; max-width: 220px; }
 .pick-bar b { font: 700 1rem var(--font-mono); color: var(--gold); }
 
 .pick-bar .pick-notice { background: var(--gold); color: var(--brand); padding: 2px 8px; border-radius: var(--radius); font-weight: 700; }
+
+.help-note {
+  display: flex; align-items: center; gap: 12px;
+  margin: 0 0 20px; padding: 12px 16px;
+  border: 2px dashed var(--brand); border-radius: var(--radius); background: var(--surface);
+}
+.help-note p { margin: 0; font-weight: 600; }
+.help-note .help-icon { flex: none; color: var(--brand); }
+.help-note a { color: var(--brand); font-weight: 800; text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 2px; white-space: nowrap; }
+.help-note a:hover { background: var(--gold); text-decoration-color: var(--ink); }
+.help-note a:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
