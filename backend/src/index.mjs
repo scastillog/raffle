@@ -11,6 +11,7 @@ import {
   getPublicState,
   listTickets,
   regenerateVerificationCode,
+  setPaused,
 } from './service.mjs';
 
 const ssm = new SSMClient({});
@@ -82,6 +83,7 @@ async function route(event) {
     if (method === 'POST' && path === '/api/admin/ganador') return declareWinner(parseBody(event));
     if (method === 'DELETE' && path === '/api/admin/ganador') return clearWinner();
     if (method === 'POST' && path === '/api/admin/codigo/regenerar') return regenerateVerificationCode();
+    if (method === 'POST' && path === '/api/admin/pausa') return setPaused(parseBody(event));
   }
 
   throw new HttpError(404, 'Ruta no encontrada.');

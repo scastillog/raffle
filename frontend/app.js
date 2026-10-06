@@ -213,6 +213,18 @@ async function load() {
   renderGrid();
   renderSelection();
   renderWinner(data.winner);
+  applyPaused(Boolean(data.paused));
+}
+
+// Pause state from the admin panel. First load picks the intro variant; later changes (polled every
+// 30 s) switch to the thank-you screen, or reload the page when the raffle is resumed.
+let pausedState = null;
+function applyPaused(paused) {
+  if (paused) $('buy-card').classList.add('hidden');
+  if (pausedState === null) window.rifaIntro?.start(paused);
+  else if (paused && !pausedState) window.rifaIntro?.showThanks();
+  else if (!paused && pausedState) location.reload();
+  pausedState = paused;
 }
 
 function showDone(order) {
@@ -325,5 +337,8 @@ $('code').value = sharedCode;
 
 renderHundreds();
 setMode('libre');
-load().catch((err) => { $('progress-text').textContent = `Error cargando la rifa: ${err.message}`; });
+load().catch((err) => {
+  $('progress-text').textContent = `Error cargando la rifa: ${err.message}`;
+  if (pausedState === null) window.rifaIntro?.start(false);
+});
 setInterval(() => load().catch(() => { }), 30000);

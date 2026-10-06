@@ -198,9 +198,31 @@ async function refresh() {
     renderVerificationCode(state.data.verificationCode);
     renderRows();
     renderWinner(state.data.winner);
+    renderPause(Boolean(state.data.paused));
   } catch (err) {
     $('panel-error').textContent = err.message;
   }
+}
+
+function renderPause(paused) {
+  $('pause-badge').textContent = paused ? 'En pausa' : 'Activa';
+  $('pause-badge').className = `badge ${paused ? 'pendiente' : 'pagado'}`;
+  $('pause-btn').textContent = paused ? 'Reanudar rifa' : 'Pausar rifa';
+  $('pause-btn').className = `btn small ${paused ? '' : 'danger'}`;
+  $('pause-btn').disabled = false;
+  $('pause-btn').onclick = async () => {
+    const question = paused
+      ? '¿Reanudar la rifa? La página pública vuelve a vender boletos.'
+      : '¿Pausar la rifa? La página pública mostrará un mensaje de agradecimiento y no se podrán comprar boletos.';
+    if (!confirm(question)) return;
+    $('pause-btn').disabled = true;
+    try {
+      await api('POST', '/api/admin/pausa', { paused: !paused });
+    } catch (err) {
+      alert(err.message);
+    }
+    refresh();
+  };
 }
 
 async function act(ticket, action) {

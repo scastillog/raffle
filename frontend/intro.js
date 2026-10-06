@@ -1,17 +1,32 @@
 // Pixel-art intro shown before the raffle page: a bandaged hand, a beating heart and
 // a typewriter message explaining the purpose, then a pixel dissolve into the page.
 // Shown once per browser session; the "Conoce el propósito" link replays it.
+// When the admin pauses the raffle, app.js shows the "thanks" variant instead: a gratitude
+// message that stays on screen (no skip, no continue) until the raffle is resumed.
 
-// ---- Edit the message here ------------------------------------------------
-const INTRO_TITLE = 'UNA RIFA CON PROPÓSITO';
-const INTRO_LINES = [
-  'Esta rifa nace con un propósito especial:',
-  'ayudar en la recuperación de una mano que sufrió una lesión grave.',
-  'Cada boleto que compras apoya su tratamiento y rehabilitación.',
-  '¡Gracias por tender la mano!',
-];
-const INTRO_BUTTON = '▶ VER LA RIFA';
-// ---------------------------------------------------------------------------
+// ---- Edit the messages here -------------------------------------------------
+const MESSAGES = {
+  purpose: {
+    title: 'UNA RIFA CON PROPÓSITO',
+    lines: [
+      'Esta rifa nace con un propósito especial:',
+      'ayudar en la recuperación de una mano que sufrió una lesión grave.',
+      'Cada boleto que compras apoya su tratamiento y rehabilitación.',
+      '¡Gracias por tender la mano!',
+    ],
+    button: '▶ VER LA RIFA',
+  },
+  thanks: {
+    title: '¡GRACIAS DE CORAZÓN!',
+    lines: [
+      'La rifa está en pausa por ahora.',
+      'Gracias a cada persona que compró un boleto, compartió el enlace o nos acompañó con sus buenos deseos.',
+      'Su apoyo hace posible esta recuperación.',
+      '¡Gracias por tender la mano!',
+    ],
+  },
+};
+// -----------------------------------------------------------------------------
 
 const SEEN_KEY = 'rifa-intro-visto';
 const AUTO_CONTINUE_MS = 6000;
@@ -226,9 +241,14 @@ function sleep(ms) {
   return new Promise((r) => setTimeout(r, ms));
 }
 
-function playIntro() {
+let stopCurrent = () => {};
+
+function playIntro(variant = 'purpose') {
   const overlay = document.getElementById('intro');
   if (!overlay) return;
+  stopCurrent(); // a replay or a switch to the thanks screen replaces whatever is running
+  const message = MESSAGES[variant];
+  const persistent = variant === 'thanks';
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const content = overlay.querySelector('.intro-content');
   const textBox = document.getElementById('intro-text');
@@ -236,10 +256,11 @@ function playIntro() {
   const skipBtn = document.getElementById('intro-skip');
   const wipe = document.getElementById('intro-wipe');
 
-  document.getElementById('intro-title').textContent = INTRO_TITLE;
-  continueBtn.textContent = INTRO_BUTTON;
+  document.getElementById('intro-title').textContent = message.title;
+  continueBtn.textContent = message.button ?? '';
   textBox.replaceChildren();
   continueBtn.hidden = true;
+  skipBtn.hidden = persistent;
   wipe.hidden = true;
   content.hidden = false;
   overlay.classList.remove('intro-leaving');
@@ -253,9 +274,15 @@ function playIntro() {
   let finished = false;
   let fastForward = false;
   let autoTimer = 0;
+  stopCurrent = () => {
+    finished = true;
+    clearTimeout(autoTimer);
+    document.removeEventListener('keydown', onKey);
+    scene.stop();
+  };
 
   async function close() {
-    if (finished) return;
+    if (finished || persistent) return;
     finished = true;
     clearTimeout(autoTimer);
     document.removeEventListener('keydown', onKey);
@@ -282,7 +309,7 @@ function playIntro() {
 
   async function typeLines() {
     await sleep(scene.revealMs + 500);
-    for (const line of INTRO_LINES) {
+    for (const line of message.lines) {
       if (finished) return;
       const p = document.createElement('p');
       const cursor = document.createElement('span');
@@ -300,7 +327,7 @@ function playIntro() {
       p.textContent = line;
       if (!fastForward) await sleep(650);
     }
-    if (finished) return;
+    if (finished || persistent) return;
     continueBtn.hidden = false;
     continueBtn.focus({ preventScroll: true });
     autoTimer = setTimeout(close, AUTO_CONTINUE_MS);
@@ -316,9 +343,16 @@ function playIntro() {
   typeLines();
 }
 
-document.getElementById('intro-replay')?.addEventListener('click', playIntro);
+document.getElementById('intro-replay')?.addEventListener('click', () => playIntro('purpose'));
 
-let seen = false;
-try { seen = sessionStorage.getItem(SEEN_KEY) === '1'; } catch { /* private mode */ }
-if (!seen) playIntro();
-else document.getElementById('intro').hidden = true;
+// Called by app.js once it knows the raffle state, so a paused raffle never flashes the normal intro.
+window.rifaIntro = {
+  start(paused) {
+    if (paused) return playIntro('thanks');
+    let seen = false;
+    try { seen = sessionStorage.getItem(SEEN_KEY) === '1'; } catch { /* private mode */ }
+    if (!seen) playIntro('purpose');
+    else document.getElementById('intro').hidden = true;
+  },
+  showThanks: () => playIntro('thanks'),
+};

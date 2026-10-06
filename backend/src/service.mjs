@@ -32,6 +32,7 @@ const NUMBERS_TABLE = process.env.NUMBERS_TABLE;
 const TICKETS_TABLE = process.env.TICKETS_TABLE;
 const SETTINGS_TABLE = process.env.SETTINGS_TABLE;
 const WINNER_KEY = { id: 'ganador' };
+const STATUS_KEY = { id: 'estado' };
 const VERIFICATION_CODE_KEY = { id: 'codigo_verificacion' };
 const RESERVATION_MS = Number(process.env.RESERVATION_HOURS || 24) * 3600 * 1000;
 const CODE_ROTATION_MS = Number(process.env.CODE_ROTATION_HOURS || 1) * 3600 * 1000;
@@ -164,9 +165,21 @@ function publicWinner(winner) {
   };
 }
 
+// Admin-controlled pause: while paused, the public page shows a thank-you screen and sales are closed.
+async function isPaused() {
+  const { Item } = await db.send(new GetCommand({ TableName: SETTINGS_TABLE, Key: STATUS_KEY }));
+  return Item?.paused === true;
+}
+
+export async function setPaused(body, now = Date.now()) {
+  if (typeof body.paused !== 'boolean') throw new HttpError(400, 'Indica si la rifa queda pausada (true/false).');
+  await db.send(new PutCommand({ TableName: SETTINGS_TABLE, Item: { ...STATUS_KEY, paused: body.paused, updatedAt: now } }));
+  return { paused: body.paused };
+}
+
 export async function getPublicState(now = Date.now()) {
-  const [taken, winner] = await Promise.all([takenNumbers(now), getWinner()]);
-  return { info: raffleInfo, taken, winner: publicWinner(winner) };
+  const [taken, winner, paused] = await Promise.all([takenNumbers(now), getWinner(), isPaused()]);
+  return { info: raffleInfo, taken, winner: publicWinner(winner), paused };
 }
 
 function newTicketId() {
@@ -205,6 +218,7 @@ export async function createTicket(body, now = Date.now()) {
   if (!name) throw new HttpError(400, 'Escribe tu nombre completo.');
   if (!phone) throw new HttpError(400, 'Escribe un celular colombiano válido (10 dígitos, empieza por 3).');
   if (await getWinner()) throw new HttpError(409, 'La rifa ya se jugó. No se venden más boletos.');
+  if (await isPaused()) throw new HttpError(409, 'La rifa está en pausa. Por ahora no se venden boletos.');
   const quantity = normalizeQuantity(body.quantity);
   if (quantity === null) throw new HttpError(400, `Puedes comprar de 1 a ${MAX_TICKETS_PER_ORDER} boletos.`);
   await verifyPurchaseCode(body.code, now);
@@ -246,10 +260,11 @@ export async function createTicket(body, now = Date.now()) {
 }
 
 export async function listTickets(now = Date.now()) {
-  const [tickets, winner, verificationCode] = await Promise.all([
+  const [tickets, winner, verificationCode, paused] = await Promise.all([
     scanAll(TICKETS_TABLE),
     getWinner(),
     getActiveVerificationCode(now),
+    isPaused(),
   ]);
   const rows = tickets
     .map((t) => ({ ...t, status: ticketStatus(t, now) }))
@@ -259,6 +274,7 @@ export async function listTickets(now = Date.now()) {
   return {
     info: raffleInfo,
     winner,
+    paused,
     verificationCode,
     tickets: rows,
     stats: {

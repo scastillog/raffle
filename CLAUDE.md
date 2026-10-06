@@ -63,6 +63,11 @@ selection modes: `libre` pick 2, `pareja` pick 1 get its pair at `+500 mod 1000`
 to `/api/*`. `intro.js`/`intro.css` is the pixel-art intro overlay on the public page (canvas sprites
 defined as string grids, typewriter text, pixel-dissolve exit); shown once per browser session
 (`sessionStorage`), replayable from the hero link. The message text is at the top of `intro.js`.
+**Pause:** the admin can pause the raffle (`POST /api/admin/pausa {paused}`, stored as `{id:'estado'}` in the
+settings table). `/api/estado` returns `paused`; `createTicket` rejects purchases while paused. `app.js` waits for
+the first `/api/estado` before starting the intro (`window.rifaIntro.start(paused)`): paused shows the `thanks`
+variant of the intro (gratitude message, no skip/continue, stays up); the 30 s poll switches an open page to it,
+and reloads the page when the raffle is resumed. Both messages are in `MESSAGES` at the top of `intro.js`.
 
 **Infra (`infra/*.tf`)** — Terraform, one file per concern: `dynamodb.tf` (3 on-demand tables),
 `lambda.tf`, `api.tf` (API Gateway HTTP API), `frontend.tf` (S3 + CloudFront with OAC, HTML/JS/CSS
